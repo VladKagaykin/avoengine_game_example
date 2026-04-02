@@ -46,7 +46,7 @@ std::vector<const char*> textures = {
 float verts[] = { -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f };
 pseudo_3d_entity* radio = new pseudo_3d_entity(5, -0.5, 5, 0, 0, textures, 8, verts);
 glb_model* glb = new glb_model(-5, -0.5, 5);
-
+Light flashlight(0);
 void intro(const char* text){
     begin_2d(window_w, window_h);
     char buf[100]; 
@@ -142,8 +142,10 @@ void main_panorama(){
 }
 void demo(){
     bool plita=false;
-    glDisable(GL_LIGHT0);
+    // glDisable(GL_LIGHT0);
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+    flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
+    flashlight.setDirectionFromPitchYaw(pitch, yaw);
     for(float i=-10;i<=10;i+=2){
         for(float j=-10;j<=10;j+=2){
             if(plita){
@@ -224,15 +226,26 @@ void update(){
     }
     glutPostRedisplay();
 }
-int main(int argc, char** argv){
+int main(int argc, char** argv) {
     setup_display(&argc, argv, 0.0f, 0.0f, 0.0f, 1.0f, "avoengine_example_game", 1280, 720);
+    glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/logo.png");
-    setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,yaw);
+    
+    enable_light();
+    // Настраиваем глобальный фонарик
+    flashlight.setRadius(5.0f);
+    flashlight.setColor(1.0f, 0.95f, 0.8f);
+    flashlight.setIntensity(1.2f);
+    flashlight.enable();
+    
+    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
     enable_fog(0.05,0.1,0.1,0.7,5,15);
+    
     if (glb->load("src/core_fanmade.glb")) {
         glb->setScale(1.0f);
     }
+    
     init_tick_system();
     glutDisplayFunc(display);
     glutIdleFunc(update);
