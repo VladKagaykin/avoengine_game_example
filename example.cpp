@@ -47,6 +47,7 @@ float verts[] = { -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f };
 pseudo_3d_entity* radio = new pseudo_3d_entity(5, -0.5, 5, 0, 0, textures, 8, verts);
 glb_model* glb = new glb_model(-5, -0.5, 5);
 Light flashlight(0);
+float verts_square[] = {-1,-1, 1,-1, 1,1, -1,1};
 void intro(const char* text){
     begin_2d(window_w, window_h);
     char buf[100]; 
@@ -169,6 +170,12 @@ void demo(){
     draw_performance_hud(window_w,window_h);
     glb->updateAnimation(absolute_tick * 0.01f);
     glb->draw();
+    begin_2d(window_w,window_h);
+    float size = 10.0f;                      // размер в пикселях
+    float centerX = window_w / 2.0f;
+    float centerY = window_h / 2.0f;
+    square(size, centerX, centerY, 1,1,1, 0, verts_square, "src/penza_low.png");
+    end_2d();
 }
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -207,7 +214,7 @@ void update(){
             if(choise<1)choise=3;
             if(keys[13]and choise==3 and absolute_tick%delay==0)exit(0);
             if(keys[13]and choise==2 and absolute_tick%delay==0)settings_mode=1;
-            if(keys[13]and choise==1 and absolute_tick%delay==0)stage=6;
+            if(keys[13]and choise==1 and absolute_tick%delay==0){yaw=0;stage=6;}
         }
         if(stage==6){
             if(keys[27] and absolute_tick%delay==0)settings_mode=1;
@@ -232,10 +239,12 @@ int main(int argc, char** argv) {
     set_icon("avoengine_opengl/logo.png");
     
     enable_light();
+    set_ambient_light(0.05f, 0.05f, 0.05f); // тёмная комната
     // Настраиваем глобальный фонарик
-    flashlight.setRadius(5.0f);
+    flashlight.setRadius(15.0f);
     flashlight.setColor(1.0f, 0.95f, 0.8f);
     flashlight.setIntensity(1.2f);
+    flashlight.setAttenuation(1.0f, 0.1f, 0.01f);  // добавить затухание
     flashlight.enable();
     
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
