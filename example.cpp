@@ -1,9 +1,11 @@
 #include"avoengine_opengl/avoengine.h"
 #include"avoengine_opengl/avoextension.h"
 #include <GL/glu.h>
+#include <GLFW/glfw3.h>
 #include <GL/glut.h>
 #include <iostream>
 #include <vector>
+GLFWwindow* window = nullptr;
 bool settings_mode=0;
 int stage=0;
 float turn_speed=0.58;
@@ -109,27 +111,28 @@ void intro(const char* text){
     }
     end_2d();
 }
+
 int choise=1;
 int sound_choise=choise;
 void main_menu(){
     begin_2d(window_w, window_h);
-    if(!settings_mode) draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Play", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Settings", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Quit", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    if(!settings_mode) draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Play", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Settings", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Quit", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
     end_2d();
 }
 void settings(){
     begin_2d(window_w,window_h);
     char buf[100];
-    draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Fov", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Fov", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
     snprintf(buf, sizeof(buf), "%.2f", camera.fov);
-    draw_text(buf, 144.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Sensentivity", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(buf, 144.0f, 18*3, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Sensentivity", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
     snprintf(buf, sizeof(buf), "%.2f", turn_speed);
-    draw_text(buf, 144.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Quit settings", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(buf, 144.0f, 18*2, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Quit settings", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
     end_2d();
     setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,yaw);
 }
@@ -168,8 +171,8 @@ void demo(){
     play_white_noise_3d(5,-1,5,1);
     radio->draw(yaw,camera.eye_x,camera.eye_y,camera.eye_z);
     draw_performance_hud(window_w,window_h);
-    glb->updateAnimation(absolute_tick * 0.01f);
-    glb->draw();
+    // glb->updateAnimation(absolute_tick * 0.01f);
+    // glb->draw();
     begin_2d(window_w,window_h);
     float size = 10.0f;                      // размер в пикселях
     float centerX = window_w / 2.0f;
@@ -187,81 +190,131 @@ void display(){
     }else{
         if(stage==5){main_menu();}
     }
-    glutSwapBuffers();
 }
 int delay=6;
-void update(){
-    if(sound_choise!=choise){
+void update() {
+    // Сброс одноразовых событий мыши (click, wheel)
+    update_mouse();
+
+    if (sound_choise != choise) {
         play_sound("src/switch-button.mp3");
-        sound_choise=choise;
+        sound_choise = choise;
     }
-    if(stage>=0 and stage<5 and keys[27])stage=5;
-    if(settings_mode){
-        if(skeys[GLUT_KEY_UP] and absolute_tick%delay==0)choise--;
-        if(skeys[GLUT_KEY_DOWN] and absolute_tick%delay==0)choise++;
-        if(choise>3)choise=1;
-        if(choise<1)choise=3;
-        if(keys[13]and choise==3 and absolute_tick%delay==0 or keys[27] and absolute_tick%delay==0){settings_mode=0;choise=1;}
-        if(skeys[GLUT_KEY_RIGHT]and choise==1)camera.fov+=0.05;
-        if(skeys[GLUT_KEY_LEFT]and choise==1)camera.fov-=0.05;
-        if(skeys[GLUT_KEY_RIGHT]and choise==2)turn_speed+=0.01;
-        if(skeys[GLUT_KEY_LEFT]and choise==2)turn_speed-=0.01;
-    }else{
-        if(stage==5){
-            if(skeys[GLUT_KEY_UP] and absolute_tick%delay==0)choise--;
-            if(skeys[GLUT_KEY_DOWN] and absolute_tick%delay==0)choise++;
-            if(choise>3)choise=1;
-            if(choise<1)choise=3;
-            if(keys[13]and choise==3 and absolute_tick%delay==0)exit(0);
-            if(keys[13]and choise==2 and absolute_tick%delay==0)settings_mode=1;
-            if(keys[13]and choise==1 and absolute_tick%delay==0){yaw=0;stage=6;}
+
+    if (stage >= 0 && stage < 5 && skeys[GLFW_KEY_ESCAPE])
+        stage = 5;
+
+    if (settings_mode) {
+        if (skeys[GLFW_KEY_UP] && absolute_tick % delay == 0) choise--;
+        if (skeys[GLFW_KEY_DOWN] && absolute_tick % delay == 0) choise++;
+        if (choise > 3) choise = 1;
+        if (choise < 1) choise = 3;
+
+        if (skeys[GLFW_KEY_ENTER] && choise == 3 && absolute_tick % delay == 0 ||
+            skeys[GLFW_KEY_ESCAPE] && absolute_tick % delay == 0) {
+            settings_mode = 0;
+            choise = 1;
         }
-        if(stage==6){
-            if(keys[27] and absolute_tick%delay==0)settings_mode=1;
-            if(keys['q'] and absolute_tick%delay==0 or keys['Q'] and absolute_tick%delay==0)exit(0);
-            if(skeys[GLUT_KEY_RIGHT])yaw-=turn_speed;
-            if(skeys[GLUT_KEY_LEFT])yaw+=turn_speed;
-            if(skeys[GLUT_KEY_UP])pitch+=turn_speed;
-            if(skeys[GLUT_KEY_DOWN])pitch-=turn_speed;
+
+        if (skeys[GLFW_KEY_RIGHT] && choise == 1) camera.fov += 0.05f;
+        if (skeys[GLFW_KEY_LEFT] && choise == 1) camera.fov -= 0.05f;
+        if (skeys[GLFW_KEY_RIGHT] && choise == 2) turn_speed += 0.01f;
+        if (skeys[GLFW_KEY_LEFT] && choise == 2) turn_speed -= 0.01f;
+    } else {
+        if (stage == 5) {
+            if (skeys[GLFW_KEY_UP] && absolute_tick % delay == 0) choise--;
+            if (skeys[GLFW_KEY_DOWN] && absolute_tick % delay == 0) choise++;
+            if (choise > 3) choise = 1;
+            if (choise < 1) choise = 3;
+
+            if (skeys[GLFW_KEY_ENTER] && choise == 3 && absolute_tick % delay == 0)
+                exit(0);
+            if (skeys[GLFW_KEY_ENTER] && choise == 2 && absolute_tick % delay == 0)
+                settings_mode = 1;
+            if (skeys[GLFW_KEY_ENTER] && choise == 1 && absolute_tick % delay == 0) {
+                yaw = 0;
+                stage = 6;
+            }
+        }
+
+        if (stage == 6) {
+            if (skeys[GLFW_KEY_ESCAPE] && absolute_tick % delay == 0)
+                settings_mode = 1;
+            if (keys[GLFW_KEY_Q] && absolute_tick % delay == 0)
+                exit(0);
+
+            if (skeys[GLFW_KEY_RIGHT]) yaw -= turn_speed;
+            if (skeys[GLFW_KEY_LEFT])  yaw += turn_speed;
+            if (skeys[GLFW_KEY_UP])    pitch += turn_speed;
+            if (skeys[GLFW_KEY_DOWN])  pitch -= turn_speed;
+
             float yr = yaw * float(M_PI) / 180.0f;
-            float mv = 0.1;
-            if(keys['w']or keys['W']){camera.eye_x+=sinf(yr)*mv;camera.eye_z+=cosf(yr)*mv;if(absolute_tick%16==0)play_sound_3d("src/footstep.wav",camera.eye_x,camera.ctr_y-1,camera.eye_z);}
-            if(keys['s']or keys['S']){camera.eye_x-=sinf(yr)*mv;camera.eye_z-=cosf(yr)*mv;if(absolute_tick%16==0)play_sound_3d("src/footstep.wav",camera.eye_x,camera.ctr_y-1,camera.eye_z);}
-            if(keys['a']or keys['A']){camera.eye_x+=cosf(yr)*mv;camera.eye_z-=sinf(yr)*mv;if(absolute_tick%16==0)play_sound_3d("src/footstep.wav",camera.eye_x,camera.ctr_y-1,camera.eye_z);}
-            if(keys['d']or keys['D']){camera.eye_x-=cosf(yr)*mv;camera.eye_z+=sinf(yr)*mv;if(absolute_tick%16==0)play_sound_3d("src/footstep.wav",camera.eye_x,camera.ctr_y-1,camera.eye_z);}
+            float mv = 0.1f;
+
+            if (keys[GLFW_KEY_W]) {
+                camera.eye_x += sinf(yr) * mv;
+                camera.eye_z += cosf(yr) * mv;
+                if (absolute_tick % 16 == 0)
+                    play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+            }
+            if (keys[GLFW_KEY_S]) {
+                camera.eye_x -= sinf(yr) * mv;
+                camera.eye_z -= cosf(yr) * mv;
+                if (absolute_tick % 16 == 0)
+                    play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+            }
+            if (keys[GLFW_KEY_A]) {
+                camera.eye_x += cosf(yr) * mv;
+                camera.eye_z -= sinf(yr) * mv;
+                if (absolute_tick % 16 == 0)
+                    play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+            }
+            if (keys[GLFW_KEY_D]) {
+                camera.eye_x -= cosf(yr) * mv;
+                camera.eye_z += sinf(yr) * mv;
+                if (absolute_tick % 16 == 0)
+                    play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+            }
         }
     }
-    glutPostRedisplay();
 }
-int main(int argc, char** argv) {
+int main(int argc, char** argv){
+    glutInit(&argc, argv);
     setup_display(&argc, argv, 0.0f, 0.0f, 0.0f, 1.0f, "avoengine_example_game", 1280, 720);
+    window = glfwGetCurrentContext(); // получить окно после setup_display
+
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/logo.png");
-    
+
     enable_light();
-    set_ambient_light(0.05f, 0.05f, 0.05f); // тёмная комната
-    // Настраиваем глобальный фонарик
+    set_ambient_light(0.05f, 0.05f, 0.05f);
     flashlight.setRadius(15.0f);
     flashlight.setColor(1.0f, 0.95f, 0.8f);
     flashlight.setIntensity(1.2f);
-    flashlight.setAttenuation(1.0f, 0.1f, 0.01f);  // добавить затухание
+    flashlight.setAttenuation(1.0f, 0.1f, 0.01f);
     flashlight.enable();
     
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
-    enable_fog(0.05,0.1,0.1,0.7,5,15);
+    enable_fog(0.05, 0.1, 0.1, 0.7, 5, 15);
     
     if (glb->load("src/core_fanmade.glb")) {
         glb->setScale(1.0f);
     }
     
     init_tick_system();
-    glutDisplayFunc(display);
-    glutIdleFunc(update);
-    glutKeyboardFunc(keyboard_down);
-    glutKeyboardUpFunc(keyboard_up);
-    glutSpecialFunc(special_down);
-    glutSpecialUpFunc(special_up);
-    glutMainLoop();
-return 0;
-} 
+    init_keyboard(window);
+    init_mouse(window);
+
+    // Главный цикл GLFW
+    while (!glfwWindowShouldClose(window)){
+        update_ticks();
+        update();          
+        display();         
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+    stop_all_looping_sounds();
+    glfwTerminate();
+    return 0;
+}
