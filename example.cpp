@@ -49,6 +49,10 @@ float verts[] = { -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f };
 pseudo_3d_entity* radio = new pseudo_3d_entity(5, -0.5, 5, 0, 0, textures, 8, verts);
 glb_model* glb = new glb_model(-5, -0.5, 5);
 Light flashlight(0);
+Light projector_1(1);
+Light projector_2(2);
+Light projector_3(3);
+Light projector_4(4);
 float verts_square[] = {-1,-1, 1,-1, 1,1, -1,1};
 
 const char* vShader = R"(
@@ -70,45 +74,39 @@ uniform sampler2D tex;
 
 void main() {
     vec3 N = normalize(vN);
-    // Направление на фонарик
-    vec3 L = normalize(gl_LightSource[0].position.xyz - vP);
-    // Направление взгляда фонарика
-    vec3 D = normalize(gl_LightSource[0].spotDirection);
-    
-    float cosT = dot(-L, D);
-    
-    // Настройка мягких краев (Smoothstep)
-    // Грань отсечения (возьмем из настроек фонарика)
-    float outerCutoff = gl_LightSource[0].spotCosCutoff;
-    // Внутренний круг будет чуть меньше, чтобы создать зону размытия
-    float innerCutoff = outerCutoff + 0.05; 
-    
-    // Считаем интенсивность с мягким краем
-    float intensity = smoothstep(outerCutoff, innerCutoff, cosT);
-    
-    // Затухание по расстоянию
-    float dist = length(gl_LightSource[0].position.xyz - vP);
-    float atten = 1.0 / (gl_LightSource[0].constantAttenuation + 
-                         gl_LightSource[0].linearAttenuation * dist + 
-                         gl_LightSource[0].quadraticAttenuation * (dist * dist));
-
-    // Диффузное освещение (наклон поверхности)
-    float diff = max(dot(N, L), 0.0);
-    
-    // Чтобы серый не стал слишком бежевым, мы подмешиваем цвет света 
-    // не на 100%, либо используем более нейтральный баланс
-    vec4 lightColor = gl_LightSource[0].diffuse;
-    vec3 ambient = gl_LightModel.ambient.rgb;
-    
-    // Финальный расчет света
-    vec3 finalLight = ambient + (lightColor.rgb * diff * intensity * atten);
-
     vec4 texColor = texture2D(tex, gl_TexCoord[0].st);
-    
-    // Умножаем текстуру на итоговый свет
-    gl_FragColor = vec4(texColor.rgb * gl_Color.rgb * finalLight, texColor.a);
+    vec3 totalLight = gl_LightModel.ambient.rgb;
+
+    // Цикл по всем 4 прожекторам (GL_LIGHT0...GL_LIGHT3)
+    for (int i = 0; i < 4; i++) {
+        vec3 L = normalize(gl_LightSource[i].position.xyz - vP);
+        vec3 D = normalize(gl_LightSource[i].spotDirection);
+        
+        float cosT = dot(-L, D);
+        float outer = gl_LightSource[i].spotCosCutoff;
+        float inner = outer + 0.1; // Размытие края
+        
+        float intensity = smoothstep(outer, inner, cosT);
+        
+        if (intensity > 0.0) {
+            float dist = length(gl_LightSource[i].position.xyz - vP);
+            float atten = 1.0 / (gl_LightSource[i].constantAttenuation + 
+                                 gl_LightSource[i].linearAttenuation * dist + 
+                                 gl_LightSource[i].quadraticAttenuation * dist * dist);
+            
+            float diff = max(dot(N, L), 0.0);
+            totalLight += gl_LightSource[i].diffuse.rgb * diff * intensity * atten;
+        }
+    }
+
+    // gl_Color.rgb — это твой серый цвет объекта
+    // Умножаем его на сумму всех огней, серый останется серым под белым светом
+    gl_FragColor = vec4(texColor.rgb * gl_Color.rgb * totalLight, texColor.a);
 }
 )";
+
+float edge = 10.0f; 
+float height = 5.0f; // высота, на которой висят прожектора
 GLuint shader;
 void intro(const char* text){
     begin_2d(window_w, window_h);
@@ -208,9 +206,29 @@ void demo(){
     bool plita=false;
     // glDisable(GL_LIGHT0);
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
-    useShader(shader);
+    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
+
+    // ТЕПЕРЬ фиксируем прожектора в мировых координатах
+    // Обновляем их позицию и направление ПРЯМО ЗДЕСЬ
+    projector_1.setPosition(-edge, height, edge);
+    projector_1.setDirectionFromPitchYaw(-45, 135); 
+
+    // Прожектор 2: Угол (5, 5, 5) -> смотрит в (0,0,0)
+    projector_2.setPosition(edge, height, edge);
+    projector_2.setDirectionFromPitchYaw(-45, -135);
+
+    // Прожектор 3: Угол (5, 5, -5) -> смотрит в (0,0,0)
+    projector_3.setPosition(edge, height, -edge);
+    projector_3.setDirectionFromPitchYaw(-45, -45);
+
+    // Прожектор 4: Угол (-5, 5, -5) -> смотрит в (0,0,0)
+    projector_4.setPosition(-edge, height, -edge);
+    projector_4.setDirectionFromPitchYaw(-45, 45);
+
+    // Фонарик игрока (индекс 0)
     flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
     flashlight.setDirectionFromPitchYaw(pitch, yaw);
+    useShader(shader);
     for(float i=-10;i<=10;i+=2){
         for(float j=-10;j<=10;j+=2){
             if(plita){
@@ -228,7 +246,6 @@ void demo(){
             }
         }
     }
-    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     play_white_noise_3d(5,-1,5,1);
     radio->draw(yaw,camera.eye_x,camera.eye_y,camera.eye_z);
     stopShader();
@@ -346,6 +363,11 @@ int main(int argc, char** argv){
     shader = createShaderProgram(vShader, fShader);
     window = glfwGetCurrentContext(); // получить окно после setup_display
 
+    glEnable(GL_LIGHT1);
+    glEnable(GL_LIGHT2);
+    glEnable(GL_LIGHT3);
+    glEnable(GL_LIGHT4);
+
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/logo.png");
 
@@ -356,6 +378,37 @@ int main(int argc, char** argv){
     flashlight.setIntensity(1.2f);
     flashlight.setAttenuation(1.0f, 0.1f, 0.01f);
     flashlight.enable();
+
+    // Прожектор 1: Красный (Угол: -10, 10)
+    projector_1.setPosition(-edge, height, edge);
+    projector_1.setDirectionFromPitchYaw(-45,-135); // светит в 0,0,0
+    projector_1.setColor(1.0f, 0.0f, 0.0f);
+    projector_1.enable();
+
+    // Прожектор 2: Зеленый (Угол: 10, 10)
+    projector_2.setPosition(edge, height, edge);
+    projector_2.setDirectionFromPitchYaw(-45,135);
+    projector_2.setColor(0.0f, 1.0f, 0.0f);
+    projector_2.enable();
+
+    // Прожектор 3: Синий (Угол: 10, -10)
+    projector_3.setPosition(edge, height, -edge);
+    projector_3.setDirectionFromPitchYaw(-45,45);
+    projector_3.setColor(0.0f, 0.0f, 1.0f);
+    projector_3.enable();
+
+    // Прожектор 4: Желтый (Угол: -10, -10)
+    projector_4.setPosition(-edge, height, -edge);
+    projector_4.setDirectionFromPitchYaw(-45,-45);
+    projector_4.setColor(0.5f, 0.5f, 0.5f);
+    projector_4.enable();
+
+    // 2. Настройка общих параметров для всех (чтобы светили как прожектора)
+    Light* projs[] = { &projector_1, &projector_2, &projector_3, &projector_4 };
+    for(int i = 0; i < 4; i++) {
+        projs[i]->setRadius(30.0f);     // Дальность луча
+        projs[i]->setIntensity(1.5f);   // Яркость
+    }
     
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
