@@ -50,6 +50,66 @@ pseudo_3d_entity* radio = new pseudo_3d_entity(5, -0.5, 5, 0, 0, textures, 8, ve
 glb_model* glb = new glb_model(-5, -0.5, 5);
 Light flashlight(0);
 float verts_square[] = {-1,-1, 1,-1, 1,1, -1,1};
+
+const char* vShader = R"(
+varying vec3 vN;
+varying vec3 vP;
+void main() {
+    vN = normalize(gl_NormalMatrix * gl_Normal);
+    vP = vec3(gl_ModelViewMatrix * gl_Vertex);
+    gl_Position = ftransform();
+    gl_TexCoord[0] = gl_MultiTexCoord0;
+    gl_FrontColor = gl_Color;
+}
+)";
+
+const char* fShader = R"(
+varying vec3 vN;
+varying vec3 vP;
+uniform sampler2D tex;
+
+void main() {
+    vec3 N = normalize(vN);
+    // Направление на фонарик
+    vec3 L = normalize(gl_LightSource[0].position.xyz - vP);
+    // Направление взгляда фонарика
+    vec3 D = normalize(gl_LightSource[0].spotDirection);
+    
+    float cosT = dot(-L, D);
+    
+    // Настройка мягких краев (Smoothstep)
+    // Грань отсечения (возьмем из настроек фонарика)
+    float outerCutoff = gl_LightSource[0].spotCosCutoff;
+    // Внутренний круг будет чуть меньше, чтобы создать зону размытия
+    float innerCutoff = outerCutoff + 0.05; 
+    
+    // Считаем интенсивность с мягким краем
+    float intensity = smoothstep(outerCutoff, innerCutoff, cosT);
+    
+    // Затухание по расстоянию
+    float dist = length(gl_LightSource[0].position.xyz - vP);
+    float atten = 1.0 / (gl_LightSource[0].constantAttenuation + 
+                         gl_LightSource[0].linearAttenuation * dist + 
+                         gl_LightSource[0].quadraticAttenuation * (dist * dist));
+
+    // Диффузное освещение (наклон поверхности)
+    float diff = max(dot(N, L), 0.0);
+    
+    // Чтобы серый не стал слишком бежевым, мы подмешиваем цвет света 
+    // не на 100%, либо используем более нейтральный баланс
+    vec4 lightColor = gl_LightSource[0].diffuse;
+    vec3 ambient = gl_LightModel.ambient.rgb;
+    
+    // Финальный расчет света
+    vec3 finalLight = ambient + (lightColor.rgb * diff * intensity * atten);
+
+    vec4 texColor = texture2D(tex, gl_TexCoord[0].st);
+    
+    // Умножаем текстуру на итоговый свет
+    gl_FragColor = vec4(texColor.rgb * gl_Color.rgb * finalLight, texColor.a);
+}
+)";
+GLuint shader;
 void intro(const char* text){
     begin_2d(window_w, window_h);
     char buf[100]; 
@@ -148,6 +208,7 @@ void demo(){
     bool plita=false;
     // glDisable(GL_LIGHT0);
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+    useShader(shader);
     flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
     flashlight.setDirectionFromPitchYaw(pitch, yaw);
     for(float i=-10;i<=10;i+=2){
@@ -170,6 +231,7 @@ void demo(){
     move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     play_white_noise_3d(5,-1,5,1);
     radio->draw(yaw,camera.eye_x,camera.eye_y,camera.eye_z);
+    stopShader();
     draw_performance_hud(window_w,window_h);
     // glb->updateAnimation(absolute_tick * 0.01f);
     // glb->draw();
@@ -281,6 +343,7 @@ void update() {
 int main(int argc, char** argv){
     glutInit(&argc, argv);
     setup_display(&argc, argv, 0.0f, 0.0f, 0.0f, 1.0f, "avoengine_example_game", 1280, 720);
+    shader = createShaderProgram(vShader, fShader);
     window = glfwGetCurrentContext(); // получить окно после setup_display
 
     glEnable(GL_NORMALIZE);
