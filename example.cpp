@@ -78,7 +78,7 @@ void main() {
     vec3 totalLight = gl_LightModel.ambient.rgb;
 
     // Цикл по всем 4 прожекторам (GL_LIGHT0...GL_LIGHT3)
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         vec3 L = normalize(gl_LightSource[i].position.xyz - vP);
         vec3 D = normalize(gl_LightSource[i].spotDirection);
         
