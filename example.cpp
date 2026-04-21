@@ -159,19 +159,19 @@ void demo(){
     // ТЕПЕРЬ фиксируем прожектора в мировых координатах
     // Обновляем их позицию и направление ПРЯМО ЗДЕСЬ
     projector_1.setPosition(-edge, height, edge);
-    projector_1.setDirectionFromPitchYaw(-45, 135); 
+    projector_1.setDirectionFromPitchYaw(-35, 135); 
 
     // Прожектор 2: Угол (5, 5, 5) -> смотрит в (0,0,0)
     projector_2.setPosition(edge, height, edge);
-    projector_2.setDirectionFromPitchYaw(-45, -135);
+    projector_2.setDirectionFromPitchYaw(-35, -135);
 
     // Прожектор 3: Угол (5, 5, -5) -> смотрит в (0,0,0)
     projector_3.setPosition(edge, height, -edge);
-    projector_3.setDirectionFromPitchYaw(-45, -45);
+    projector_3.setDirectionFromPitchYaw(-35, -45);
 
     // Прожектор 4: Угол (-5, 5, -5) -> смотрит в (0,0,0)
     projector_4.setPosition(-edge, height, -edge);
-    projector_4.setDirectionFromPitchYaw(-45, 45);
+    projector_4.setDirectionFromPitchYaw(-35, 45);
 
     // Фонарик игрока (индекс 0)
     flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
@@ -352,7 +352,7 @@ int main(int argc, char** argv){
     // 2. Настройка общих параметров для всех (чтобы светили как прожектора)
     Light* projs[] = { &projector_1, &projector_2, &projector_3, &projector_4 };
     for(int i = 0; i < 4; i++) {
-        projs[i]->setRadius(20.0f);     // Дальность луча
+        projs[i]->setRadius(15.0f);     // Дальность луча
         projs[i]->setIntensity(1.5f);   // Яркость
     }
     
