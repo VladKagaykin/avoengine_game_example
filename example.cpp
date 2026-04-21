@@ -47,7 +47,6 @@ std::vector<const char*> textures = {
 };
 float verts[] = { -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f };
 pseudo_3d_entity* radio = new pseudo_3d_entity(5, -0.5, 5, 0, 0, textures, 8, verts);
-glb_model* glb = new glb_model(-5, -0.5, 5);
 Light flashlight(0);
 Light projector_1(1);
 Light projector_2(2);
@@ -250,8 +249,6 @@ void demo(){
     radio->draw(yaw,camera.eye_x,camera.eye_y,camera.eye_z);
     stopShader();
     draw_performance_hud(window_w,window_h);
-    // glb->updateAnimation(absolute_tick * 0.01f);
-    // glb->draw();
     begin_2d(window_w,window_h);
     float size = 10.0f;                      // размер в пикселях
     float centerX = window_w / 2.0f;
@@ -413,10 +410,6 @@ int main(int argc, char** argv){
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
     enable_fog(0.05, 0.1, 0.1, 0.7, 5, 15);
-    
-    if (glb->load("src/core_fanmade.glb")) {
-        glb->setScale(1.0f);
-    }
     
     init_tick_system();
     init_keyboard(window);
