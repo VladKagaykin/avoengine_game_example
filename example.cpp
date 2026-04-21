@@ -47,66 +47,15 @@ std::vector<const char*> textures = {
 };
 float verts[] = { -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f };
 pseudo_3d_entity* radio = new pseudo_3d_entity(5, -0.5, 5, 0, 0, textures, 8, verts);
-Light flashlight(0);
-Light projector_1(1);
-Light projector_2(2);
-Light projector_3(3);
-Light projector_4(4);
+Light flashlight;
+Light projector_1;
+Light projector_2;
+Light projector_3;
+Light projector_4;
 float verts_square[] = {-1,-1, 1,-1, 1,1, -1,1};
-
-const char* vShader = R"(
-varying vec3 vN;
-varying vec3 vP;
-void main() {
-    vN = normalize(gl_NormalMatrix * gl_Normal);
-    vP = vec3(gl_ModelViewMatrix * gl_Vertex);
-    gl_Position = ftransform();
-    gl_TexCoord[0] = gl_MultiTexCoord0;
-    gl_FrontColor = gl_Color;
-}
-)";
-
-const char* fShader = R"(
-varying vec3 vN;
-varying vec3 vP;
-uniform sampler2D tex;
-
-void main() {
-    vec3 N = normalize(vN);
-    vec4 texColor = texture2D(tex, gl_TexCoord[0].st);
-    vec3 totalLight = gl_LightModel.ambient.rgb;
-
-    // Цикл по всем 4 прожекторам (GL_LIGHT0...GL_LIGHT3)
-    for (int i = 0; i < 5; i++) {
-        vec3 L = normalize(gl_LightSource[i].position.xyz - vP);
-        vec3 D = normalize(gl_LightSource[i].spotDirection);
-        
-        float cosT = dot(-L, D);
-        float outer = gl_LightSource[i].spotCosCutoff;
-        float inner = outer + 0.1; // Размытие края
-        
-        float intensity = smoothstep(outer, inner, cosT);
-        
-        if (intensity > 0.0) {
-            float dist = length(gl_LightSource[i].position.xyz - vP);
-            float atten = 1.0 / (gl_LightSource[i].constantAttenuation + 
-                                 gl_LightSource[i].linearAttenuation * dist + 
-                                 gl_LightSource[i].quadraticAttenuation * dist * dist);
-            
-            float diff = max(dot(N, L), 0.0);
-            totalLight += gl_LightSource[i].diffuse.rgb * diff * intensity * atten;
-        }
-    }
-
-    // gl_Color.rgb — это твой серый цвет объекта
-    // Умножаем его на сумму всех огней, серый останется серым под белым светом
-    gl_FragColor = vec4(texColor.rgb * gl_Color.rgb * totalLight, texColor.a);
-}
-)";
 
 float edge = 10.0f; 
 float height = 5.0f; // высота, на которой висят прожектора
-GLuint shader;
 void intro(const char* text){
     begin_2d(window_w, window_h);
     char buf[100]; 
@@ -227,7 +176,8 @@ void demo(){
     // Фонарик игрока (индекс 0)
     flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
     flashlight.setDirectionFromPitchYaw(pitch, yaw);
-    useShader(shader);
+    useShader(defaultLightingShader);
+    applyAllLights();
     for(float i=-10;i<=10;i+=2){
         for(float j=-10;j<=10;j+=2){
             if(plita){
@@ -268,6 +218,7 @@ void display(){
     }
 }
 int delay=6;
+int last_footstep=0;
 void update() {
     // Сброс одноразовых событий мыши (click, wheel)
     update_mouse();
@@ -330,26 +281,30 @@ void update() {
             if (keys[GLFW_KEY_W]) {
                 camera.eye_x += sinf(yr) * mv;
                 camera.eye_z += cosf(yr) * mv;
-                if (absolute_tick % 16 == 0)
+                if (absolute_tick % 5 == 0 and last_footstep != absolute_tick)
                     play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+                    last_footstep = absolute_tick;
             }
             if (keys[GLFW_KEY_S]) {
                 camera.eye_x -= sinf(yr) * mv;
                 camera.eye_z -= cosf(yr) * mv;
-                if (absolute_tick % 16 == 0)
+                if (absolute_tick % 5 == 0 and last_footstep != absolute_tick)
                     play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+                    last_footstep = absolute_tick;
             }
             if (keys[GLFW_KEY_A]) {
                 camera.eye_x += cosf(yr) * mv;
                 camera.eye_z -= sinf(yr) * mv;
-                if (absolute_tick % 16 == 0)
+                if (absolute_tick % 5 == 0 and last_footstep != absolute_tick)
                     play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+                    last_footstep = absolute_tick;
             }
             if (keys[GLFW_KEY_D]) {
                 camera.eye_x -= cosf(yr) * mv;
                 camera.eye_z += sinf(yr) * mv;
-                if (absolute_tick % 16 == 0)
+                if (absolute_tick % 5 == 0 and last_footstep != absolute_tick)
                     play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+                    last_footstep = absolute_tick;
             }
         }
     }
@@ -357,13 +312,7 @@ void update() {
 int main(int argc, char** argv){
     glutInit(&argc, argv);
     setup_display(&argc, argv, 0.0f, 0.0f, 0.0f, 1.0f, "avoengine_example_game", 1280, 720);
-    shader = createShaderProgram(vShader, fShader);
     window = glfwGetCurrentContext(); // получить окно после setup_display
-
-    glEnable(GL_LIGHT1);
-    glEnable(GL_LIGHT2);
-    glEnable(GL_LIGHT3);
-    glEnable(GL_LIGHT4);
 
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/logo.png");
@@ -397,13 +346,13 @@ int main(int argc, char** argv){
     // Прожектор 4: Желтый (Угол: -10, -10)
     projector_4.setPosition(-edge, height, -edge);
     projector_4.setDirectionFromPitchYaw(-45,-45);
-    projector_4.setColor(0.5f, 0.5f, 0.5f);
+    projector_4.setColor(1, 1, 1);
     projector_4.enable();
 
     // 2. Настройка общих параметров для всех (чтобы светили как прожектора)
     Light* projs[] = { &projector_1, &projector_2, &projector_3, &projector_4 };
     for(int i = 0; i < 4; i++) {
-        projs[i]->setRadius(30.0f);     // Дальность луча
+        projs[i]->setRadius(20.0f);     // Дальность луча
         projs[i]->setIntensity(1.5f);   // Яркость
     }
     
