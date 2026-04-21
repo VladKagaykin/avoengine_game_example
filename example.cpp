@@ -46,7 +46,7 @@ std::vector<const char*> textures = {
     "src/radio/render_062_ring07_az270.png", "src/radio/render_063_ring07_az315.png"
 };
 float verts[] = { -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f };
-pseudo_3d_entity* radio = new pseudo_3d_entity(5, -0.5, 5, 0, 0, textures, 8, verts);
+pseudo_3d_entity* radio = new pseudo_3d_entity(5, -0.5, 5, 0, 0, 0.0f, textures, 8, verts);
 Light flashlight;
 Light projector_1;
 Light projector_2;
@@ -196,7 +196,7 @@ void demo(){
         }
     }
     play_white_noise_3d(5,-1,5,1);
-    radio->draw(yaw,camera.eye_x,camera.eye_y,camera.eye_z);
+    radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
     stopShader();
     draw_performance_hud(window_w,window_h);
     begin_2d(window_w,window_h);
