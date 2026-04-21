@@ -47,11 +47,11 @@ std::vector<const char*> textures = {
 };
 float verts[] = { -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f };
 pseudo_3d_entity* radio = new pseudo_3d_entity(5, -0.5, 5, 0, 0, 0.0f, textures, 8, verts);
-Light flashlight;
 Light projector_1;
 Light projector_2;
 Light projector_3;
 Light projector_4;
+Light flashlight;
 float verts_square[] = {-1,-1, 1,-1, 1,1, -1,1};
 
 float edge = 10.0f; 
@@ -178,6 +178,7 @@ void demo(){
     flashlight.setDirectionFromPitchYaw(pitch, yaw);
     useShader(defaultLightingShader);
     applyAllLights();
+    applyAllShadows();
     for(float i=-10;i<=10;i+=2){
         for(float j=-10;j<=10;j+=2){
             if(plita){
@@ -359,7 +360,7 @@ int main(int argc, char** argv){
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
     enable_fog(0.05, 0.1, 0.1, 0.7, 5, 15);
-    
+    radio->setCastShadow(true);
     init_tick_system();
     init_keyboard(window);
     init_mouse(window);
