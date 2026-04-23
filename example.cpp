@@ -46,7 +46,7 @@ std::vector<const char*> textures = {
     "src/radio/render_062_ring07_az270.png", "src/radio/render_063_ring07_az315.png"
 };
 float verts[] = { -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f };
-pseudo_3d_entity* radio = new pseudo_3d_entity(5, -0.5, 5, 0, 0, 0.0f, textures, 8, verts);
+pseudo_3d_entity* radio = new pseudo_3d_entity(0, -0.5, 0, 0, 0, 0.0f, textures, 8, verts);
 Light projector_1;
 Light projector_2;
 Light projector_3;
