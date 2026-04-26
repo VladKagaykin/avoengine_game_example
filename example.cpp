@@ -1,16 +1,20 @@
-#include"avoengine_opengl/avoengine.h"
-#include"avoengine_opengl/avoextension.h"
+#include "avoengine_opengl/avoengine.h"
+#include "avoengine_opengl/avoextension.h"
 #include <GL/glu.h>
 #include <GLFW/glfw3.h>
 #include <GL/glut.h>
 #include <iostream>
 #include <vector>
+#include <filesystem>
+#include <algorithm>
+
 GLFWwindow* window = nullptr;
-bool settings_mode=0;
-int stage=0;
-float turn_speed=0.58;
+bool settings_mode = 0;
+int stage = 0;
+float turn_speed = 0.58;
 float pitch = 0;
-float yaw =0;
+float yaw = 0;
+
 std::vector<const char*> textures = {
     "src/radio/render_000_ring00_az000.png", "src/radio/render_001_ring00_az045.png",
     "src/radio/render_002_ring00_az090.png", "src/radio/render_003_ring00_az135.png",
@@ -46,7 +50,10 @@ std::vector<const char*> textures = {
     "src/radio/render_062_ring07_az270.png", "src/radio/render_063_ring07_az315.png"
 };
 float verts[] = { -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f };
-pseudo_3d_entity* radio = new pseudo_3d_entity(0, -0.5, 0, 0, 0, 0.0f, textures, 8, verts);
+
+std::vector<std::string> textures_str(textures.begin(), textures.end());
+pseudo_3d_entity* radio = new pseudo_3d_entity(0, -0.5, 0, 0, 0, 0.0f, textures_str, 8, std::vector<float>(verts, verts + 8));
+
 Light projector_1;
 Light projector_2;
 Light projector_3;
@@ -54,28 +61,131 @@ Light projector_4;
 Light flashlight;
 float verts_square[] = {-1,-1, 1,-1, 1,1, -1,1};
 
-float edge = 10.0f; 
-float height = 5.0f; // высота, на которой висят прожектора
+float edge = 10.0f;
+float height = 5.0f;
+
+bool map_menu_active = false;
+std::vector<std::string> map_files;
+int selected_map_index = 0;
+std::vector<Light*> dynamicLights;
+
+void refresh_map_list() {
+    map_files.clear();
+    if (!std::filesystem::exists("maps")) {
+        std::filesystem::create_directory("maps");
+        return;
+    }
+    for (const auto& entry : std::filesystem::directory_iterator("maps")) {
+        if (entry.is_regular_file() && entry.path().extension() == ".avomap") {
+            map_files.push_back(entry.path().filename().string());
+        }
+    }
+    selected_map_index = (map_files.empty() ? 0 : std::min(selected_map_index, (int)map_files.size()-1));
+}
+
+void apply_loaded_map(const MapData& map) {
+    stop_all_looping_sounds();
+
+    for (auto* e : allEntities) {
+        e->setCastShadow(false);
+        delete e;
+    }
+    allEntities.clear();
+
+    projector_1.disable();
+    projector_2.disable();
+    projector_3.disable();
+    projector_4.disable();
+    flashlight.disable();
+
+    for (Light* l : dynamicLights) {
+        l->disable();
+        delete l;
+    }
+    dynamicLights.clear();
+
+    for (const auto& ent : map.entities) {
+        pseudo_3d_entity* e = mapDataToEntity(ent);
+        if (ent.castShadow) e->setCastShadow(true);
+        registerEntity(e);
+    }
+
+    for (const auto& ldata : map.lights) {
+        Light* newLight = new Light();
+        mapDataToLight(ldata, *newLight);
+        newLight->enable();
+        dynamicLights.push_back(newLight);
+    }
+
+    if (map.fog_enabled) {
+        enable_fog(map.fog_density, map.fog_color[0], map.fog_color[1], map.fog_color[2],
+                   map.fog_start, map.fog_end);
+    } else {
+        disable_fog();
+    }
+
+    camera.eye_x = map.camera_eye[0];
+    camera.eye_y = map.camera_eye[1];
+    camera.eye_z = map.camera_eye[2];
+    pitch = map.camera_pitch;
+    yaw = map.camera_yaw;
+    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
+
+    if (!map.panorama_path.empty()) {
+        set_panorama(map.panorama_path.c_str());
+    } else {
+        remove_panorama();
+    }
+
+    set_ambient_light(map.ambient[0], map.ambient[1], map.ambient[2]);
+}
+
+void quick_save() {
+    if (!std::filesystem::exists("maps"))
+        std::filesystem::create_directory("maps");
+    save_current_scene("maps/quicksave.avomap");
+    refresh_map_list();
+}
+
+void draw_map_menu() {
+    begin_2d(window_w, window_h);
+
+    draw_text("~ Map Menu ~", 20.0f, float(window_h) - 30.0f,
+              GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 0.0f);
+    draw_text("S: Save (quicksave.avomap)   Enter: Load   Esc: Close",
+              20.0f, 20.0f, GLUT_BITMAP_HELVETICA_12, 0.8f, 0.8f, 0.8f);
+
+    if (map_files.empty()) {
+        draw_text("(no maps in maps/ folder)", 20.0f, float(window_h) - 60.0f,
+                  GLUT_BITMAP_HELVETICA_12, 0.7f, 0.7f, 0.7f);
+    } else {
+        float y = float(window_h) - 60.0f;
+        for (int i = 0; i < (int)map_files.size(); ++i) {
+            std::string line = (i == selected_map_index) ? "> " : "  ";
+            line += map_files[i];
+            float r = (i == selected_map_index) ? 1.0f : 0.7f;
+            float g = (i == selected_map_index) ? 1.0f : 0.7f;
+            draw_text(line.c_str(), 20.0f, y, GLUT_BITMAP_HELVETICA_12, r, g, 0.7f);
+            y -= 20.0f;
+        }
+    }
+    end_2d();
+}
+
 void intro(const char* text){
     begin_2d(window_w, window_h);
-    char buf[100]; 
+    char buf[100];
     if (stage == 0) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
         delay_text(buf, 10.0f, float(window_h) - 20.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
-        if (absolute_tick >= 64) {
-            absolute_tick = 1;
-            stage = 1;        
-        }
+        if (absolute_tick >= 64) { absolute_tick = 1; stage = 1; }
     }
     if (stage == 1) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
         draw_text(buf, 10.0f, float(window_h) - 20.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
         snprintf(buf, sizeof(buf), "GPU: %s ", gpu_name.c_str());
         delay_text(buf, 10.0f, float(window_h) - 38.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
-        if (absolute_tick >= 64) {
-            absolute_tick = 1; 
-            stage = 2;
-        }
+        if (absolute_tick >= 64) { absolute_tick = 1; stage = 2; }
     }
     if (stage == 2) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
@@ -84,10 +194,7 @@ void intro(const char* text){
         draw_text(buf, 10.0f, float(window_h) - 38.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
         snprintf(buf, sizeof(buf), "RAM: %s ", ram_v.c_str());
         delay_text(buf, 10.0f, float(window_h) - 56.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
-        if (absolute_tick >= 64){
-            stage = 3;
-            absolute_tick = 1;
-        } 
+        if (absolute_tick >= 64){ stage = 3; absolute_tick = 1; }
     }
     if (stage == 3) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
@@ -97,10 +204,7 @@ void intro(const char* text){
         snprintf(buf, sizeof(buf), "RAM: %s ", ram_v.c_str());
         draw_text(buf, 10.0f, float(window_h) - 56.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
         delay_text(text, 10.0f, float(window_h) - 74.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
-        if (absolute_tick >= 64){
-            stage = 4;
-            absolute_tick = 1;
-        } 
+        if (absolute_tick >= 64){ stage = 4; absolute_tick = 1; }
     }
     if (stage == 4) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
@@ -110,16 +214,14 @@ void intro(const char* text){
         snprintf(buf, sizeof(buf), "RAM: %s ", ram_v.c_str());
         disappearing_text(buf, 10.0f, float(window_h) - 56.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
         disappearing_text(text, 10.0f, float(window_h) - 74.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
-        if (absolute_tick >= 64){
-            stage = 5;
-            absolute_tick = 1;
-        } 
+        if (absolute_tick >= 64){ stage = 5; absolute_tick = 1; }
     }
     end_2d();
 }
 
-int choise=1;
-int sound_choise=choise;
+int choise = 1;
+int sound_choise = choise;
+
 void main_menu(){
     begin_2d(window_w, window_h);
     if(!settings_mode) draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
@@ -128,6 +230,7 @@ void main_menu(){
     draw_text("Quit", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
     end_2d();
 }
+
 void settings(){
     begin_2d(window_w,window_h);
     char buf[100];
@@ -142,7 +245,9 @@ void settings(){
     end_2d();
     setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,yaw);
 }
-float panorama_move=0;
+
+float panorama_move = 0;
+
 void main_panorama(){
     end_2d();
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
@@ -150,48 +255,34 @@ void main_panorama(){
     setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,panorama_move);
     yaw=panorama_move;
 }
+
 void demo(){
     bool plita=false;
-    // glDisable(GL_LIGHT0);
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
 
-    // ТЕПЕРЬ фиксируем прожектора в мировых координатах
-    // Обновляем их позицию и направление ПРЯМО ЗДЕСЬ
     projector_1.setPosition(-edge, height, edge);
-    projector_1.setDirectionFromPitchYaw(-35, 135); 
-
-    // Прожектор 2: Угол (5, 5, 5) -> смотрит в (0,0,0)
+    projector_1.setDirectionFromPitchYaw(-35, 135);
     projector_2.setPosition(edge, height, edge);
     projector_2.setDirectionFromPitchYaw(-35, -135);
-
-    // Прожектор 3: Угол (5, 5, -5) -> смотрит в (0,0,0)
     projector_3.setPosition(edge, height, -edge);
     projector_3.setDirectionFromPitchYaw(-35, -45);
-
-    // Прожектор 4: Угол (-5, 5, -5) -> смотрит в (0,0,0)
     projector_4.setPosition(-edge, height, -edge);
     projector_4.setDirectionFromPitchYaw(-35, 45);
 
-    // Фонарик игрока (индекс 0)
     flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
     flashlight.setDirectionFromPitchYaw(pitch, yaw);
     useShader(defaultLightingShader);
     applyAllLights();
     applyAllShadows();
+
     for(float i=-10;i<=10;i+=2){
         for(float j=-10;j<=10;j+=2){
             if(plita){
-                plane(i,-1,j,1,1,1,"src/wall_y.jpeg",{1,0,1,
-                                                    1,0,-1,
-                                                    -1,0,-1,
-                                                    -1,0,1});
+                plane(i,-1,j,1,1,1,"src/wall_y.jpeg",{1,0,1, 1,0,-1, -1,0,-1, -1,0,1});
                 plita=false;
             }else{
-                plane(i,-1,j,0.5,0.5,0.5,nullptr,{1,0,1,
-                                            1,0,-1,
-                                            -1,0,-1,
-                                            -1,0,1});
+                plane(i,-1,j,0.5,0.5,0.5,nullptr,{1,0,1, 1,0,-1, -1,0,-1, -1,0,1});
                 plita=true;
             }
         }
@@ -201,28 +292,72 @@ void demo(){
     stopShader();
     draw_performance_hud(window_w,window_h);
     begin_2d(window_w,window_h);
-    float size = 10.0f;                      // размер в пикселях
+    float size = 10.0f;
     float centerX = window_w / 2.0f;
     float centerY = window_h / 2.0f;
     square(size, centerX, centerY, 1,1,1, 0, verts_square, "src/penza_low.png");
     end_2d();
 }
+
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if(stage<5)intro("Welcome to avoengine_game_example");
     if(stage==5){main_panorama();}
-    if(stage==6){demo();}
+    if(stage==6){
+        demo();
+        if (map_menu_active) draw_map_menu();
+    }
     if(settings_mode){
         settings();
     }else{
         if(stage==5){main_menu();}
     }
 }
-int delay=6;
-int last_footstep=0;
+
+int delay = 6;
+int last_footstep = 0;
+int delay_map = 10;
+
 void update() {
-    // Сброс одноразовых событий мыши (click, wheel)
     update_mouse();
+
+    if (stage == 6 && keys[GLFW_KEY_M] && absolute_tick % delay_map == 0) {
+        map_menu_active = !map_menu_active;
+        if (map_menu_active) {
+            refresh_map_list();
+            selected_map_index = 0;
+        }
+    }
+
+    if (map_menu_active) {
+        if (skeys[GLFW_KEY_UP] && absolute_tick % delay == 0) {
+            if (!map_files.empty())
+                selected_map_index = (selected_map_index - 1 + map_files.size()) % map_files.size();
+        }
+        if (skeys[GLFW_KEY_DOWN] && absolute_tick % delay == 0) {
+            if (!map_files.empty())
+                selected_map_index = (selected_map_index + 1) % map_files.size();
+        }
+        if (skeys[GLFW_KEY_ENTER] && absolute_tick % delay == 0) {
+            if (!map_files.empty()) {
+                std::string path = "maps/" + map_files[selected_map_index];
+                MapData map;
+                if (load_map(path.c_str(), map)) {
+                    apply_loaded_map(map);
+                    map_menu_active = false;
+                } else {
+                    std::cerr << "Failed to load map: " << path << std::endl;
+                }
+            }
+        }
+        if (keys[GLFW_KEY_S] && absolute_tick % delay == 0) {
+            quick_save();
+        }
+        if (skeys[GLFW_KEY_ESCAPE] && absolute_tick % delay == 0) {
+            map_menu_active = false;
+        }
+        return;
+    }
 
     if (sound_choise != choise) {
         play_sound("src/switch-button.mp3");
@@ -238,8 +373,7 @@ void update() {
         if (choise > 3) choise = 1;
         if (choise < 1) choise = 3;
 
-        if (skeys[GLFW_KEY_ENTER] && choise == 3 && absolute_tick % delay == 0 ||
-            skeys[GLFW_KEY_ESCAPE] && absolute_tick % delay == 0) {
+        if ((skeys[GLFW_KEY_ENTER] && choise == 3) || (skeys[GLFW_KEY_ESCAPE]) && absolute_tick % delay == 0) {
             settings_mode = 0;
             choise = 1;
         }
@@ -282,38 +416,43 @@ void update() {
             if (keys[GLFW_KEY_W]) {
                 camera.eye_x += sinf(yr) * mv;
                 camera.eye_z += cosf(yr) * mv;
-                if (absolute_tick % 5 == 0 and last_footstep != absolute_tick)
+                if (absolute_tick % 5 == 0 && last_footstep != absolute_tick) {
                     play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
                     last_footstep = absolute_tick;
+                }
             }
             if (keys[GLFW_KEY_S]) {
                 camera.eye_x -= sinf(yr) * mv;
                 camera.eye_z -= cosf(yr) * mv;
-                if (absolute_tick % 5 == 0 and last_footstep != absolute_tick)
+                if (absolute_tick % 5 == 0 && last_footstep != absolute_tick) {
                     play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
                     last_footstep = absolute_tick;
+                }
             }
             if (keys[GLFW_KEY_A]) {
                 camera.eye_x += cosf(yr) * mv;
                 camera.eye_z -= sinf(yr) * mv;
-                if (absolute_tick % 5 == 0 and last_footstep != absolute_tick)
+                if (absolute_tick % 5 == 0 && last_footstep != absolute_tick) {
                     play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
                     last_footstep = absolute_tick;
+                }
             }
             if (keys[GLFW_KEY_D]) {
                 camera.eye_x -= cosf(yr) * mv;
                 camera.eye_z += sinf(yr) * mv;
-                if (absolute_tick % 5 == 0 and last_footstep != absolute_tick)
+                if (absolute_tick % 5 == 0 && last_footstep != absolute_tick) {
                     play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
                     last_footstep = absolute_tick;
+                }
             }
         }
     }
 }
+
 int main(int argc, char** argv){
     glutInit(&argc, argv);
     setup_display(&argc, argv, 0.0f, 0.0f, 0.0f, 1.0f, "avoengine_example_game", 1280, 720);
-    window = glfwGetCurrentContext(); // получить окно после setup_display
+    window = glfwGetCurrentContext();
 
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/logo.png");
@@ -326,35 +465,30 @@ int main(int argc, char** argv){
     flashlight.setAttenuation(1.0f, 0.1f, 0.01f);
     flashlight.enable();
 
-    // Прожектор 1: Красный (Угол: -10, 10)
     projector_1.setPosition(-edge, height, edge);
-    projector_1.setDirectionFromPitchYaw(-45,-135); // светит в 0,0,0
+    projector_1.setDirectionFromPitchYaw(-45,-135);
     projector_1.setColor(1.0f, 0.0f, 0.0f);
     projector_1.enable();
 
-    // Прожектор 2: Зеленый (Угол: 10, 10)
     projector_2.setPosition(edge, height, edge);
     projector_2.setDirectionFromPitchYaw(-45,135);
     projector_2.setColor(0.0f, 1.0f, 0.0f);
     projector_2.enable();
 
-    // Прожектор 3: Синий (Угол: 10, -10)
     projector_3.setPosition(edge, height, -edge);
     projector_3.setDirectionFromPitchYaw(-45,45);
     projector_3.setColor(0.0f, 0.0f, 1.0f);
     projector_3.enable();
 
-    // Прожектор 4: Желтый (Угол: -10, -10)
     projector_4.setPosition(-edge, height, -edge);
     projector_4.setDirectionFromPitchYaw(-45,-45);
     projector_4.setColor(1, 1, 1);
     projector_4.enable();
 
-    // 2. Настройка общих параметров для всех (чтобы светили как прожектора)
     Light* projs[] = { &projector_1, &projector_2, &projector_3, &projector_4 };
     for(int i = 0; i < 4; i++) {
-        projs[i]->setRadius(15.0f);     // Дальность луча
-        projs[i]->setIntensity(1.5f);   // Яркость
+        projs[i]->setRadius(15.0f);
+        projs[i]->setIntensity(1.5f);
     }
     
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
@@ -365,11 +499,10 @@ int main(int argc, char** argv){
     init_keyboard(window);
     init_mouse(window);
 
-    // Главный цикл GLFW
     while (!glfwWindowShouldClose(window)){
         update_ticks();
-        update();          
-        display();         
+        update();
+        display();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
