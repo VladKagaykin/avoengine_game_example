@@ -69,6 +69,8 @@ std::vector<std::string> map_files;
 int selected_map_index = 0;
 std::vector<Light*> dynamicLights;
 
+Portal* portals = nullptr;
+
 void refresh_map_list() {
     map_files.clear();
     if (!std::filesystem::exists("maps")) {
@@ -256,10 +258,8 @@ void main_panorama(){
     yaw=panorama_move;
 }
 
-void demo(){
+void demo_scene(){
     bool plita=false;
-    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
-    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
 
     projector_1.setPosition(-edge, height, edge);
     projector_1.setDirectionFromPitchYaw(-35, 135);
@@ -289,7 +289,16 @@ void demo(){
     }
     play_white_noise_3d(5,-1,5,1);
     radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
+}
+
+void demo(){
+    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
+    demo_scene();
     stopShader();
+
+    portals->draw(2);
+
     draw_performance_hud(window_w,window_h);
     begin_2d(window_w,window_h);
     float size = 10.0f;
@@ -490,7 +499,15 @@ int main(int argc, char** argv){
         projs[i]->setRadius(15.0f);
         projs[i]->setIntensity(1.5f);
     }
-    
+
+    std::vector<float> portalVerts = { -1,-1,0, -1,1,0, 1,1,0, 1,-1,0 };
+    portals = new Portal(5.0f, 0.0f, 5.0f,   -5.0f, 0.0f, -5.0f,
+                     portalVerts,
+                     -45.0f, 0.0f, 0.0f,
+                     135.0f, 0.0f, 0.0f);
+
+    portals->setSceneDrawCallback([&]() {demo_scene();});
+
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
     enable_fog(0.05, 0.1, 0.1, 0.7, 5, 15);
@@ -506,6 +523,8 @@ int main(int argc, char** argv){
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+    delete portals;
+    portals = nullptr;
     stop_all_looping_sounds();
     glfwTerminate();
     return 0;
