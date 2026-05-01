@@ -259,6 +259,7 @@ void main_panorama(){
 }
 
 void demo_scene(){
+    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     bool plita=false;
 
     projector_1.setPosition(-edge, height, edge);
@@ -292,7 +293,7 @@ void demo_scene(){
 }
 
 void demo(){
-    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+    // draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     demo_scene();
     stopShader();
@@ -465,7 +466,7 @@ int main(int argc, char** argv){
 
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/logo.png");
-
+    useShader(defaultLightingShader);
     enable_light();
     set_ambient_light(0.05f, 0.05f, 0.05f);
     flashlight.setRadius(15.0f);
@@ -503,8 +504,8 @@ int main(int argc, char** argv){
     std::vector<float> portalVerts = { -1,-1,0, -1,1,0, 1,1,0, 1,-1,0 };
     portals = new Portal(5.0f, 0.0f, 5.0f,   -5.0f, 0.0f, -5.0f,
                      portalVerts,
-                     -45.0f, 0.0f, 0.0f,
-                     135.0f, 0.0f, 0.0f);
+                     45.0f, 0.0f, 0.0f,
+                     45.0f, 0.0f, 0.0f);
 
     portals->setSceneDrawCallback([&]() {demo_scene();});
 
@@ -515,7 +516,7 @@ int main(int argc, char** argv){
     init_tick_system();
     init_keyboard(window);
     init_mouse(window);
-
+    stopShader();
     while (!glfwWindowShouldClose(window)){
         update_ticks();
         update();
