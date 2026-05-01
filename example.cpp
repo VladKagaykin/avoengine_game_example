@@ -259,7 +259,6 @@ void main_panorama(){
 }
 
 void demo_scene(){
-    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     bool plita=false;
 
     projector_1.setPosition(-edge, height, edge);
@@ -293,7 +292,8 @@ void demo_scene(){
 }
 
 void demo(){
-    // draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+    portals->checkTeleport();
     move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     demo_scene();
     stopShader();
