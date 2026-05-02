@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <algorithm>
 
+float pitch,yaw;
+
 GLFWwindow* window = nullptr;
 bool settings_mode = 0;
 int stage = 0;
@@ -127,9 +129,9 @@ void apply_loaded_map(const MapData& map) {
     camera.eye_x = map.camera_eye[0];
     camera.eye_y = map.camera_eye[1];
     camera.eye_z = map.camera_eye[2];
-    camera.pitch = map.camera_pitch;
-    camera.yaw = map.camera_yaw;
-    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, camera.pitch, camera.yaw);
+    pitch = map.camera_pitch;
+    yaw = map.camera_yaw;
+    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
 
     if (!map.panorama_path.empty()) {
         set_panorama(map.panorama_path.c_str());
@@ -243,7 +245,7 @@ void settings(){
     draw_text(buf, 144.0f, 18*2, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
     draw_text("Quit settings", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
     end_2d();
-    setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,camera.pitch,camera.yaw);
+    setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,yaw);
 }
 
 float panorama_move = 0;
@@ -252,7 +254,7 @@ void main_panorama(){
     end_2d();
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     if(absolute_tick%1==0){panorama_move+=turn_speed;}
-    setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,camera.pitch,panorama_move);
+    setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,panorama_move);
     camera.yaw=panorama_move;
 }
 
@@ -292,7 +294,9 @@ void demo_scene(){
 void demo(){
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     portals->checkTeleport();
-    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, camera.pitch, camera.yaw);
+    if(camera.pitch!=pitch){pitch=camera.pitch;}
+    if(camera.yaw!=yaw){yaw=camera.yaw;}
+    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     demo_scene();
     stopShader();
 
@@ -507,7 +511,7 @@ int main(int argc, char** argv){
 
     portals->setSceneDrawCallback([&]() {demo_scene();});
 
-    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, camera.pitch, camera.yaw);
+    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
     enable_fog(0.05, 0.1, 0.1, 0.7, 5, 15);
     radio->setCastShadow(true);
