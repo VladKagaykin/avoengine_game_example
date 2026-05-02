@@ -505,7 +505,7 @@ int main(int argc, char** argv){
     portals = new Portal(5.0f, 0.0f, 5.0f,   -5.0f, 0.0f, -5.0f,
                      portalVerts,
                      45.0f, 0.0f, 0.0f,
-                     45.0f, 0.0f, 0.0f);
+                     0.0f, 0.0f, 0.0f);
 
     portals->setSceneDrawCallback([&]() {demo_scene();});
 
