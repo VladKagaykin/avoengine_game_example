@@ -12,8 +12,6 @@ GLFWwindow* window = nullptr;
 bool settings_mode = 0;
 int stage = 0;
 float turn_speed = 0.58;
-float pitch = 0;
-float yaw = 0;
 
 std::vector<const char*> textures = {
     "src/radio/render_000_ring00_az000.png", "src/radio/render_001_ring00_az045.png",
@@ -129,9 +127,9 @@ void apply_loaded_map(const MapData& map) {
     camera.eye_x = map.camera_eye[0];
     camera.eye_y = map.camera_eye[1];
     camera.eye_z = map.camera_eye[2];
-    pitch = map.camera_pitch;
-    yaw = map.camera_yaw;
-    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
+    camera.pitch = map.camera_pitch;
+    camera.yaw = map.camera_yaw;
+    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, camera.pitch, camera.yaw);
 
     if (!map.panorama_path.empty()) {
         set_panorama(map.panorama_path.c_str());
@@ -245,7 +243,7 @@ void settings(){
     draw_text(buf, 144.0f, 18*2, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
     draw_text("Quit settings", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
     end_2d();
-    setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,yaw);
+    setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,camera.pitch,camera.yaw);
 }
 
 float panorama_move = 0;
@@ -254,8 +252,8 @@ void main_panorama(){
     end_2d();
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     if(absolute_tick%1==0){panorama_move+=turn_speed;}
-    setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,panorama_move);
-    yaw=panorama_move;
+    setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,camera.pitch,panorama_move);
+    camera.yaw=panorama_move;
 }
 
 void demo_scene(){
@@ -271,7 +269,7 @@ void demo_scene(){
     projector_4.setDirectionFromPitchYaw(-35, 45);
 
     flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
-    flashlight.setDirectionFromPitchYaw(pitch, yaw);
+    flashlight.setDirectionFromPitchYaw(camera.pitch, camera.yaw);
     useShader(defaultLightingShader);
     applyAllLights();
     applyAllShadows();
@@ -294,7 +292,7 @@ void demo_scene(){
 void demo(){
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     portals->checkTeleport();
-    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
+    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, camera.pitch, camera.yaw);
     demo_scene();
     stopShader();
 
@@ -404,7 +402,7 @@ void update() {
             if (skeys[GLFW_KEY_ENTER] && choise == 2 && absolute_tick % delay == 0)
                 settings_mode = 1;
             if (skeys[GLFW_KEY_ENTER] && choise == 1 && absolute_tick % delay == 0) {
-                yaw = 0;
+                camera.yaw = 0;
                 stage = 6;
             }
         }
@@ -415,12 +413,12 @@ void update() {
             if (keys[GLFW_KEY_Q] && absolute_tick % delay == 0)
                 exit(0);
 
-            if (skeys[GLFW_KEY_RIGHT]) yaw -= turn_speed;
-            if (skeys[GLFW_KEY_LEFT])  yaw += turn_speed;
-            if (skeys[GLFW_KEY_UP])    pitch += turn_speed;
-            if (skeys[GLFW_KEY_DOWN])  pitch -= turn_speed;
+            if (skeys[GLFW_KEY_RIGHT]) camera.yaw -= turn_speed;
+            if (skeys[GLFW_KEY_LEFT])  camera.yaw += turn_speed;
+            if (skeys[GLFW_KEY_UP])    camera.pitch += turn_speed;
+            if (skeys[GLFW_KEY_DOWN])  camera.pitch -= turn_speed;
 
-            float yr = yaw * float(M_PI) / 180.0f;
+            float yr = camera.yaw * float(M_PI) / 180.0f;
             float mv = 0.1f;
 
             if (keys[GLFW_KEY_W]) {
@@ -509,7 +507,7 @@ int main(int argc, char** argv){
 
     portals->setSceneDrawCallback([&]() {demo_scene();});
 
-    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
+    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, camera.pitch, camera.yaw);
     set_panorama("src/stargazer.png");
     enable_fog(0.05, 0.1, 0.1, 0.7, 5, 15);
     radio->setCastShadow(true);
