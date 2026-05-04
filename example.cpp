@@ -155,11 +155,11 @@ void draw_map_menu() {
     draw_text("~ Map Menu ~", 20.0f, float(window_h) - 30.0f,
               GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 0.0f);
     draw_text("S: Save (quicksave.avomap)   Enter: Load   Esc: Close",
-              20.0f, 20.0f, GLUT_BITMAP_HELVETICA_12, 0.8f, 0.8f, 0.8f);
+              20.0f, 20.0f, GLUT_BITMAP_HELVETICA_18, 0.8f, 0.8f, 0.8f);
 
     if (map_files.empty()) {
         draw_text("(no maps in maps/ folder)", 20.0f, float(window_h) - 60.0f,
-                  GLUT_BITMAP_HELVETICA_12, 0.7f, 0.7f, 0.7f);
+                  GLUT_BITMAP_HELVETICA_18, 0.7f, 0.7f, 0.7f);
     } else {
         float y = float(window_h) - 60.0f;
         for (int i = 0; i < (int)map_files.size(); ++i) {
@@ -167,7 +167,7 @@ void draw_map_menu() {
             line += map_files[i];
             float r = (i == selected_map_index) ? 1.0f : 0.7f;
             float g = (i == selected_map_index) ? 1.0f : 0.7f;
-            draw_text(line.c_str(), 20.0f, y, GLUT_BITMAP_HELVETICA_12, r, g, 0.7f);
+            draw_text(line.c_str(), 20.0f, y, GLUT_BITMAP_HELVETICA_18, r, g, 0.7f);
             y -= 20.0f;
         }
     }
@@ -226,24 +226,24 @@ int sound_choise = choise;
 
 void main_menu(){
     begin_2d(window_w, window_h);
-    if(!settings_mode) draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Play", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Settings", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Quit", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
+    if(!settings_mode) draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Play", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Settings", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Quit", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
     end_2d();
 }
 
 void settings(){
     begin_2d(window_w,window_h);
     char buf[100];
-    draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Fov", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Fov", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
     snprintf(buf, sizeof(buf), "%.2f", camera.fov);
-    draw_text(buf, 144.0f, 18*3, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Sensentivity", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(buf, 144.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Sensentivity", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
     snprintf(buf, sizeof(buf), "%.2f", turn_speed);
-    draw_text(buf, 144.0f, 18*2, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Quit settings", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_12, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(buf, 144.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Quit settings", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
     end_2d();
     setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,yaw);
 }
@@ -287,7 +287,7 @@ void demo_scene(){
             }
         }
     }
-    play_white_noise_3d(5,-1,5,1);
+    play_white_noise_3d(0,-1,0,1);
     radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
 }
 
@@ -296,7 +296,7 @@ void demo(){
     portals->checkTeleport();
     if(camera.pitch!=pitch){pitch=camera.pitch;}
     if(camera.yaw!=yaw){yaw=camera.yaw;}
-    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
+    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, camera.yaw);
     demo_scene();
     stopShader();
 
@@ -326,11 +326,13 @@ void display(){
     }
 }
 
-int delay = 6;
+int delay = 10;
 int last_footstep = 0;
 int delay_map = 10;
-
+int menu_cooldown=0;
 void update() {
+    if (menu_cooldown > 0) menu_cooldown--;
+
     update_mouse();
 
     if (stage == 6 && keys[GLFW_KEY_M] && absolute_tick % delay_map == 0) {
@@ -342,15 +344,17 @@ void update() {
     }
 
     if (map_menu_active) {
-        if (skeys[GLFW_KEY_UP] && absolute_tick % delay == 0) {
+        if (skeys[GLFW_KEY_UP] && menu_cooldown <= 0) {
             if (!map_files.empty())
                 selected_map_index = (selected_map_index - 1 + map_files.size()) % map_files.size();
+            menu_cooldown = 10;
         }
-        if (skeys[GLFW_KEY_DOWN] && absolute_tick % delay == 0) {
+        if (skeys[GLFW_KEY_DOWN] && menu_cooldown <= 0) {
             if (!map_files.empty())
                 selected_map_index = (selected_map_index + 1) % map_files.size();
+            menu_cooldown = 10;
         }
-        if (skeys[GLFW_KEY_ENTER] && absolute_tick % delay == 0) {
+        if (skeys[GLFW_KEY_ENTER] && menu_cooldown <= 0) {
             if (!map_files.empty()) {
                 std::string path = "maps/" + map_files[selected_map_index];
                 MapData map;
@@ -361,101 +365,133 @@ void update() {
                     std::cerr << "Failed to load map: " << path << std::endl;
                 }
             }
+            menu_cooldown = 10;
         }
-        if (keys[GLFW_KEY_S] && absolute_tick % delay == 0) {
+        if (keys[GLFW_KEY_S] && menu_cooldown <= 0) {
             quick_save();
+            menu_cooldown = 10;
         }
-        if (skeys[GLFW_KEY_ESCAPE] && absolute_tick % delay == 0) {
+        if (skeys[GLFW_KEY_ESCAPE] && menu_cooldown <= 0) {
             map_menu_active = false;
+            menu_cooldown = 10;
         }
         return;
     }
 
-    if (sound_choise != choise) {
+    if (sound_choise != choise && last_footstep != absolute_tick) {
         play_sound("src/switch-button.mp3");
         sound_choise = choise;
+        last_footstep = absolute_tick;
     }
 
-    if (stage >= 0 && stage < 5 && skeys[GLFW_KEY_ESCAPE])
+    if (stage >= 0 && stage < 5 && skeys[GLFW_KEY_ESCAPE]) {
         stage = 5;
+    }
 
     if (settings_mode) {
-        if (skeys[GLFW_KEY_UP] && absolute_tick % delay == 0) choise--;
-        if (skeys[GLFW_KEY_DOWN] && absolute_tick % delay == 0) choise++;
+        if (skeys[GLFW_KEY_UP] && menu_cooldown <= 0) {
+            choise--;
+            menu_cooldown = 10;
+        }
+        if (skeys[GLFW_KEY_DOWN] && menu_cooldown <= 0) {
+            choise++;
+            menu_cooldown = 10;
+        }
         if (choise > 3) choise = 1;
         if (choise < 1) choise = 3;
 
-        if ((skeys[GLFW_KEY_ENTER] && choise == 3) || (skeys[GLFW_KEY_ESCAPE]) && absolute_tick % delay == 0) {
+        if ((skeys[GLFW_KEY_ENTER] || skeys[GLFW_KEY_ESCAPE]) && menu_cooldown <= 0) {
             settings_mode = 0;
             choise = 1;
+            menu_cooldown = 10;
         }
 
-        if (skeys[GLFW_KEY_RIGHT] && choise == 1) camera.fov += 0.05f;
-        if (skeys[GLFW_KEY_LEFT] && choise == 1) camera.fov -= 0.05f;
-        if (skeys[GLFW_KEY_RIGHT] && choise == 2) turn_speed += 0.01f;
-        if (skeys[GLFW_KEY_LEFT] && choise == 2) turn_speed -= 0.01f;
-    } else {
-        if (stage == 5) {
-            if (skeys[GLFW_KEY_UP] && absolute_tick % delay == 0) choise--;
-            if (skeys[GLFW_KEY_DOWN] && absolute_tick % delay == 0) choise++;
-            if (choise > 3) choise = 1;
-            if (choise < 1) choise = 3;
+        if (skeys[GLFW_KEY_RIGHT] && choise == 1 && menu_cooldown <= 0) {
+            camera.fov += 0.05f;
+            menu_cooldown = 10;
+        }
+        if (skeys[GLFW_KEY_LEFT] && choise == 1 && menu_cooldown <= 0) {
+            camera.fov -= 0.05f;
+            menu_cooldown = 10;
+        }
+        if (skeys[GLFW_KEY_RIGHT] && choise == 2 && menu_cooldown <= 0) {
+            turn_speed += 0.01f;
+            menu_cooldown = 10;
+        }
+        if (skeys[GLFW_KEY_LEFT] && choise == 2 && menu_cooldown <= 0) {
+            turn_speed -= 0.01f;
+            menu_cooldown = 10;
+        }
+    }
+    else if (stage == 5) {
+        if (skeys[GLFW_KEY_UP] && menu_cooldown <= 0) {
+            choise--;
+            menu_cooldown = 10;
+        }
+        if (skeys[GLFW_KEY_DOWN] && menu_cooldown <= 0) {
+            choise++;
+            menu_cooldown = 10;
+        }
+        if (choise > 3) choise = 1;
+        if (choise < 1) choise = 3;
 
-            if (skeys[GLFW_KEY_ENTER] && choise == 3 && absolute_tick % delay == 0)
+        if (skeys[GLFW_KEY_ENTER] && menu_cooldown <= 0) {
+            menu_cooldown = 10;
+            if (choise == 3)
                 exit(0);
-            if (skeys[GLFW_KEY_ENTER] && choise == 2 && absolute_tick % delay == 0)
+            else if (choise == 2)
                 settings_mode = 1;
-            if (skeys[GLFW_KEY_ENTER] && choise == 1 && absolute_tick % delay == 0) {
+            else if (choise == 1) {
                 camera.yaw = 0;
                 stage = 6;
             }
         }
+    }
 
-        if (stage == 6) {
-            if (skeys[GLFW_KEY_ESCAPE] && absolute_tick % delay == 0)
-                settings_mode = 1;
-            if (keys[GLFW_KEY_Q] && absolute_tick % delay == 0)
-                exit(0);
+    if (stage == 6) {
+        if (skeys[GLFW_KEY_ESCAPE] && absolute_tick % delay == 0)
+            settings_mode = 1;
+        if (keys[GLFW_KEY_Q] && absolute_tick % delay == 0)
+            exit(0);
 
-            if (skeys[GLFW_KEY_RIGHT]) camera.yaw -= turn_speed;
-            if (skeys[GLFW_KEY_LEFT])  camera.yaw += turn_speed;
-            if (skeys[GLFW_KEY_UP])    camera.pitch += turn_speed;
-            if (skeys[GLFW_KEY_DOWN])  camera.pitch -= turn_speed;
+        if (skeys[GLFW_KEY_RIGHT]) camera.yaw -= turn_speed;
+        if (skeys[GLFW_KEY_LEFT])  camera.yaw += turn_speed;
+        if (skeys[GLFW_KEY_UP])    camera.pitch += turn_speed;
+        if (skeys[GLFW_KEY_DOWN])  camera.pitch -= turn_speed;
 
-            float yr = camera.yaw * float(M_PI) / 180.0f;
-            float mv = 0.1f;
+        float yr = camera.yaw * float(M_PI) / 180.0f;
+        float mv = 0.1f;
 
-            if (keys[GLFW_KEY_W]) {
-                camera.eye_x += sinf(yr) * mv;
-                camera.eye_z += cosf(yr) * mv;
-                if (absolute_tick % 5 == 0 && last_footstep != absolute_tick) {
-                    play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
-                    last_footstep = absolute_tick;
-                }
+        if (keys[GLFW_KEY_W]) {
+            camera.eye_x += sinf(yr) * mv;
+            camera.eye_z += cosf(yr) * mv;
+            if (absolute_tick % delay == 0 && last_footstep != absolute_tick) {
+                play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+                last_footstep = absolute_tick;
             }
-            if (keys[GLFW_KEY_S]) {
-                camera.eye_x -= sinf(yr) * mv;
-                camera.eye_z -= cosf(yr) * mv;
-                if (absolute_tick % 5 == 0 && last_footstep != absolute_tick) {
-                    play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
-                    last_footstep = absolute_tick;
-                }
+        }
+        if (keys[GLFW_KEY_S]) {
+            camera.eye_x -= sinf(yr) * mv;
+            camera.eye_z -= cosf(yr) * mv;
+            if (absolute_tick % delay == 0 && last_footstep != absolute_tick) {
+                play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+                last_footstep = absolute_tick;
             }
-            if (keys[GLFW_KEY_A]) {
-                camera.eye_x += cosf(yr) * mv;
-                camera.eye_z -= sinf(yr) * mv;
-                if (absolute_tick % 5 == 0 && last_footstep != absolute_tick) {
-                    play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
-                    last_footstep = absolute_tick;
-                }
+        }
+        if (keys[GLFW_KEY_A]) {
+            camera.eye_x += cosf(yr) * mv;
+            camera.eye_z -= sinf(yr) * mv;
+            if (absolute_tick % delay == 0 && last_footstep != absolute_tick) {
+                play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+                last_footstep = absolute_tick;
             }
-            if (keys[GLFW_KEY_D]) {
-                camera.eye_x -= cosf(yr) * mv;
-                camera.eye_z += sinf(yr) * mv;
-                if (absolute_tick % 5 == 0 && last_footstep != absolute_tick) {
-                    play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
-                    last_footstep = absolute_tick;
-                }
+        }
+        if (keys[GLFW_KEY_D]) {
+            camera.eye_x -= cosf(yr) * mv;
+            camera.eye_z += sinf(yr) * mv;
+            if (absolute_tick % delay == 0 && last_footstep != absolute_tick) {
+                play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
+                last_footstep = absolute_tick;
             }
         }
     }
