@@ -1,0 +1,3 @@
+g++ -o game example.cpp avoengine_opengl/avoengine.cpp avoengine_opengl/avoextension.cpp -Iavoengine_opengl/src 
+-Iavoengine_opengl/src/hwinfo -I/usr/include/stb -lGLEW -lglfw -lGLU -lGL -lSOIL -lglut -L/usr/local/lib -lhwinfo_cpu 
+-lhwinfo_gpu -lhwinfo_ram -fopenmp -lassimp

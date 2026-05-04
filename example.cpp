@@ -503,7 +503,7 @@ int main(int argc, char** argv){
     window = glfwGetCurrentContext();
 
     glEnable(GL_NORMALIZE);
-    set_icon("avoengine_opengl/logo.png");
+    set_icon("avoengine_opengl/src/logo.png");
     useShader(defaultLightingShader);
     enable_light();
     set_ambient_light(0.05f, 0.05f, 0.05f);
