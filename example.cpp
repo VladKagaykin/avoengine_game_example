@@ -71,6 +71,8 @@ std::vector<Light*> dynamicLights;
 
 Portal* portals = nullptr;
 
+void demo_scene();
+
 void refresh_map_list() {
     map_files.clear();
     if (!std::filesystem::exists("maps")) {
@@ -106,6 +108,16 @@ void apply_loaded_map(const MapData& map) {
     }
     dynamicLights.clear();
 
+    if (portals) {
+        delete portals;
+        portals = nullptr;
+    }
+    auto portalsCopy = allPortals;
+    for (auto* p : portalsCopy) {
+        delete p; 
+    }
+    allPortals.clear();
+
     for (const auto& ent : map.entities) {
         pseudo_3d_entity* e = mapDataToEntity(ent);
         if (ent.castShadow) e->setCastShadow(true);
@@ -117,6 +129,14 @@ void apply_loaded_map(const MapData& map) {
         mapDataToLight(ldata, *newLight);
         newLight->enable();
         dynamicLights.push_back(newLight);
+    }
+
+    for (const auto& portalData : map.portals) {
+        Portal* newPortal = mapDataToPortal(portalData);
+        newPortal->setSceneDrawCallback([&]() { demo_scene(); });
+        if (!portals) {
+            portals = newPortal;
+        }
     }
 
     if (map.fog_enabled) {
@@ -293,14 +313,18 @@ void demo_scene(){
 
 void demo(){
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
-    portals->checkTeleport();
+    if (portals) {
+        portals->checkTeleport();
+    }
     if(camera.pitch!=pitch){pitch=camera.pitch;}
     if(camera.yaw!=yaw){yaw=camera.yaw;}
     move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, camera.yaw);
     demo_scene();
     stopShader();
 
-    portals->draw(2);
+    if (portals) {
+        portals->draw(2);
+    }
 
     draw_performance_hud(window_w,window_h);
     begin_2d(window_w,window_h);
