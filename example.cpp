@@ -354,16 +354,46 @@ int delay = 10;
 int last_footstep = 0;
 int delay_map = 10;
 int menu_cooldown=0;
+int prev_mouse_x = 0, prev_mouse_y = 0;
+bool mouse_was_captured = false;
+int toggle_cooldown = 0;
 void update() {
     if (menu_cooldown > 0) menu_cooldown--;
+    if (toggle_cooldown > 0) toggle_cooldown--;
 
     update_mouse();
 
-    if (stage == 6 && keys[GLFW_KEY_M] && absolute_tick % delay_map == 0) {
+    if (stage == 6 && mouse_captured && !settings_mode && !map_menu_active) {
+        int dx = mouse_x - prev_mouse_x;
+        int dy = mouse_y - prev_mouse_y;
+        prev_mouse_x = mouse_x;
+        prev_mouse_y = mouse_y;
+
+        const float sensitivity = 0.1f;
+        camera.yaw   -= dx * sensitivity;
+        camera.pitch -= dy * sensitivity;
+
+        if (camera.pitch > 89.0f)  camera.pitch = 89.0f;
+        if (camera.pitch < -89.0f) camera.pitch = -89.0f;
+    }
+
+    if (stage == 6 && keys[GLFW_KEY_M] && toggle_cooldown <= 0) {
         map_menu_active = !map_menu_active;
+        toggle_cooldown = 20;
         if (map_menu_active) {
+            if (mouse_was_captured) {
+                set_mouse_capture(window, false);
+                mouse_was_captured = false;
+            }
             refresh_map_list();
             selected_map_index = 0;
+        } else {
+            if (!settings_mode) {
+                set_mouse_capture(window, true);
+                prev_mouse_x = mouse_x;
+                prev_mouse_y = mouse_y;
+                mouse_was_captured = true;
+            }
         }
     }
 
@@ -385,6 +415,11 @@ void update() {
                 if (load_map(path.c_str(), map)) {
                     apply_loaded_map(map);
                     map_menu_active = false;
+                    toggle_cooldown = 20;
+                    set_mouse_capture(window, true);
+                    prev_mouse_x = mouse_x;
+                    prev_mouse_y = mouse_y;
+                    mouse_was_captured = true;
                 } else {
                     std::cerr << "Failed to load map: " << path << std::endl;
                 }
@@ -398,6 +433,11 @@ void update() {
         if (skeys[GLFW_KEY_ESCAPE] && menu_cooldown <= 0) {
             map_menu_active = false;
             menu_cooldown = 10;
+            toggle_cooldown = 20;
+            set_mouse_capture(window, true);
+            prev_mouse_x = mouse_x;
+            prev_mouse_y = mouse_y;
+            mouse_was_captured = true;
         }
         return;
     }
@@ -424,10 +464,17 @@ void update() {
         if (choise > 3) choise = 1;
         if (choise < 1) choise = 3;
 
-        if ((skeys[GLFW_KEY_ENTER] || skeys[GLFW_KEY_ESCAPE]) && menu_cooldown <= 0) {
+        if ((skeys[GLFW_KEY_ENTER] || skeys[GLFW_KEY_ESCAPE]) && menu_cooldown <= 0 && toggle_cooldown <= 0) {
             settings_mode = 0;
             choise = 1;
             menu_cooldown = 10;
+            toggle_cooldown = 20;
+            if (stage == 6) {
+                set_mouse_capture(window, true);
+                prev_mouse_x = mouse_x;
+                prev_mouse_y = mouse_y;
+                mouse_was_captured = true;
+            }
         }
 
         if (skeys[GLFW_KEY_RIGHT] && choise == 1 && menu_cooldown <= 0) {
@@ -468,13 +515,24 @@ void update() {
             else if (choise == 1) {
                 camera.yaw = 0;
                 stage = 6;
+                set_mouse_capture(window, true);
+                prev_mouse_x = mouse_x;
+                prev_mouse_y = mouse_y;
+                mouse_was_captured = true;
             }
         }
     }
 
     if (stage == 6) {
-        if (skeys[GLFW_KEY_ESCAPE] && absolute_tick % delay == 0)
+        if (!settings_mode && skeys[GLFW_KEY_ESCAPE] && toggle_cooldown <= 0) {
             settings_mode = 1;
+            toggle_cooldown = 20;
+            if (mouse_was_captured) {
+                set_mouse_capture(window, false);
+                mouse_was_captured = false;
+            }
+        }
+
         if (keys[GLFW_KEY_Q] && absolute_tick % delay == 0)
             exit(0);
 
