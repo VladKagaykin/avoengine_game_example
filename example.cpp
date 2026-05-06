@@ -7,6 +7,7 @@
 #include <vector>
 #include <filesystem>
 #include <algorithm>
+#include "avoengine_opengl/src/miniaudio.h"
 
 float pitch,yaw;
 
@@ -52,7 +53,7 @@ std::vector<const char*> textures = {
 float verts[] = { -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f };
 
 std::vector<std::string> textures_str(textures.begin(), textures.end());
-pseudo_3d_entity* radio = new pseudo_3d_entity(0, -0.5, 0, 0, 0, 0.0f, textures_str, 8, std::vector<float>(verts, verts + 8));
+pseudo_3d_entity* radio = nullptr;
 
 Light projector_1;
 Light projector_2;
@@ -307,7 +308,6 @@ void demo_scene(){
             }
         }
     }
-    play_white_noise_3d(0,-1,0,1);
     radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
 }
 
@@ -372,9 +372,6 @@ void update() {
         const float sensitivity = 0.1f;
         camera.yaw   -= dx * sensitivity;
         camera.pitch -= dy * sensitivity;
-
-        if (camera.pitch > 89.0f)  camera.pitch = 89.0f;
-        if (camera.pitch < -89.0f) camera.pitch = -89.0f;
     }
 
     if (stage == 6 && keys[GLFW_KEY_M] && toggle_cooldown <= 0) {
@@ -519,6 +516,7 @@ void update() {
                 prev_mouse_x = mouse_x;
                 prev_mouse_y = mouse_y;
                 mouse_was_captured = true;
+                play_white_noise_3d(0, -1, 0, 1.0f);
             }
         }
     }
@@ -583,6 +581,8 @@ int main(int argc, char** argv){
     glutInit(&argc, argv);
     setup_display(&argc, argv, 0.0f, 0.0f, 0.0f, 1.0f, "avoengine_example_game", 1280, 720);
     window = glfwGetCurrentContext();
+
+    radio = new pseudo_3d_entity(0, -0.5, 0, 0, 0, 0.0f, textures_str, 8, std::vector<float>(verts, verts + 8));
 
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/src/logo.png");
