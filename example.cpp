@@ -9,7 +9,7 @@
 #include <algorithm>
 #include "avoengine_opengl/src/miniaudio.h"
 
-float pitch,yaw;
+float pitch,yaw,roll;
 
 GLFWwindow* window = nullptr;
 bool settings_mode = 0;
@@ -320,7 +320,7 @@ void demo(){
     }
     if(camera.pitch!=pitch){pitch=camera.pitch;}
     if(camera.yaw!=yaw){yaw=camera.yaw;}
-    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, camera.yaw);
+    move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, camera.yaw,roll);
 
     demo_scene();
     // stopShader();
@@ -565,6 +565,7 @@ void update() {
         if (keys[GLFW_KEY_A]) {
             camera.eye_x += cosf(yr) * mv;
             camera.eye_z -= sinf(yr) * mv;
+            roll = 5;
             if (absolute_tick % delay == 0 && last_footstep != absolute_tick) {
                 play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
                 last_footstep = absolute_tick;
@@ -573,6 +574,7 @@ void update() {
         if (keys[GLFW_KEY_D]) {
             camera.eye_x -= cosf(yr) * mv;
             camera.eye_z += sinf(yr) * mv;
+            roll = -5;
             if (absolute_tick % delay == 0 && last_footstep != absolute_tick) {
                 play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
                 last_footstep = absolute_tick;
