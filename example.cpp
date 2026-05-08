@@ -171,7 +171,7 @@ void quick_save() {
 }
 
 void draw_map_menu() {
-    begin_2d(window_w, window_h);
+    
 
     draw_text("~ Map Menu ~", 20.0f, float(window_h) - 30.0f,
               GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 0.0f);
@@ -192,11 +192,11 @@ void draw_map_menu() {
             y -= 20.0f;
         }
     }
-    end_2d();
+    
 }
 
 void intro(const char* text){
-    begin_2d(window_w, window_h);
+    
     char buf[100];
     if (stage == 0) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
@@ -239,23 +239,22 @@ void intro(const char* text){
         disappearing_text(text, 10.0f, float(window_h) - 74.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
         if (absolute_tick >= 64){ stage = 5; absolute_tick = 1; }
     }
-    end_2d();
+    
 }
 
 int choise = 1;
 int sound_choise = choise;
 
 void main_menu(){
-    begin_2d(window_w, window_h);
     if(!settings_mode) draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
     draw_text("Play", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
     draw_text("Settings", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
     draw_text("Quit", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    end_2d();
+    
 }
 
 void settings(){
-    begin_2d(window_w,window_h);
+    
     char buf[100];
     draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
     draw_text("Fov", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
@@ -265,14 +264,14 @@ void settings(){
     snprintf(buf, sizeof(buf), "%.2f", turn_speed);
     draw_text(buf, 144.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
     draw_text("Quit settings", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    end_2d();
+    
     setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,yaw);
 }
 
 float panorama_move = 0;
 
 void main_panorama(){
-    end_2d();
+    
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     if(absolute_tick%1==0){panorama_move+=turn_speed;}
     setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,panorama_move);
@@ -327,12 +326,10 @@ void demo(){
     }
 
     draw_performance_hud(window_w,window_h);
-    begin_2d(window_w,window_h);
     float size = 10.0f;
     float centerX = window_w / 2.0f;
     float centerY = window_h / 2.0f;
     square(size, centerX, centerY, 1,1,1, 0, verts_square, "src/penza_low.png");
-    end_2d();
 }
 
 void display(){
@@ -641,6 +638,7 @@ int main(int argc, char** argv){
         update_ticks();
         update();
         display();
+        flushDrawQueue();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
