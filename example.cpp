@@ -281,6 +281,9 @@ void main_panorama(){
 void demo_scene(){
     bool plita=false;
 
+    flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
+    flashlight.setDirectionFromPitchYaw(camera.pitch, camera.yaw);
+
     projector_1.setPosition(-edge, height, edge);
     projector_1.setDirectionFromPitchYaw(-35, 135);
     projector_2.setPosition(edge, height, edge);
@@ -290,8 +293,6 @@ void demo_scene(){
     projector_4.setPosition(-edge, height, -edge);
     projector_4.setDirectionFromPitchYaw(-35, 45);
 
-    flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
-    flashlight.setDirectionFromPitchYaw(camera.pitch, camera.yaw);
     useShader(defaultLightingShader);
     applyAllLights();
     applyAllShadows();
@@ -311,6 +312,8 @@ void demo_scene(){
 }
 
 void demo(){
+    float dir_pitch = asin(camera.dir_y) * 180.0f / M_PI;
+    float dir_yaw   = atan2(camera.dir_x, camera.dir_z) * 180.0f / M_PI;
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     if (portals) {
         portals->checkTeleport();
@@ -318,12 +321,16 @@ void demo(){
     if(camera.pitch!=pitch){pitch=camera.pitch;}
     if(camera.yaw!=yaw){yaw=camera.yaw;}
     move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, camera.yaw);
+
     demo_scene();
-    stopShader();
+    // stopShader();
 
     if (portals) {
         portals->draw(2);
     }
+
+    flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
+    flashlight.setDirectionFromPitchYaw(camera.pitch, camera.yaw);
 
     draw_performance_hud(window_w,window_h);
     float size = 10.0f;
