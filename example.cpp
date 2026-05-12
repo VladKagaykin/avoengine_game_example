@@ -312,8 +312,9 @@ void demo_scene(){
 }
 
 void demo(){
-    g_rayTraceMode=1;
-    // draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+    float dir_pitch = asin(camera.dir_y) * 180.0f / M_PI;
+    float dir_yaw   = atan2(camera.dir_x, camera.dir_z) * 180.0f / M_PI;
+    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     if (portals) {
         portals->checkTeleport();
     }
@@ -324,9 +325,9 @@ void demo(){
     demo_scene();
     // stopShader();
 
-    // if (portals) {
-    //     portals->draw(2);d
-    // }
+    if (portals) {
+        portals->draw(2);
+    }
 
     flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
     flashlight.setDirectionFromPitchYaw(camera.pitch, camera.yaw);
