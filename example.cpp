@@ -309,7 +309,8 @@ void demo_scene(){
         }
     }
     radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
-    draw_line_3d(0, -0.99,0,-10,0,-10,10,0,10,1,1,1,1,50);
+    draw_line_3d(0, -0.5,0,-10,0,-10,10,0,10,1,1,1,1,50);
+    plane(-5,-0.5,5,0.5,0.5,0.5,nullptr,{0.5,0,0.5, 0.5,0,-0.5, -0.5,0,-0.5, -0.5,0,0.5});
 }
 
 void demo(){
