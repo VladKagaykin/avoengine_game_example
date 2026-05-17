@@ -339,8 +339,8 @@ void demo(){
     float centerX = window_w / 2.0f;
     float centerY = window_h / 2.0f;
     // square(size, centerX, centerY, 1,1,1, 0, verts_square, "src/penza_low.png");
-    draw_line_2d(centerX,centerY,1,1,-1,-1,1,1,1,1,10);
-    draw_line_2d(centerX,centerY,-1,-1,1,1,1,1,1,1,10);
+    draw_line_2d(centerX, centerY,  20,  20, -20, -20,  1,1,1,1, 2);  
+    draw_line_2d(centerX, centerY, -20,  20,  20, -20,  1,1,1,1, 2);
 }
 
 void display(){
