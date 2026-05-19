@@ -279,6 +279,7 @@ void main_panorama(){
 }
 
 void demo_scene(){
+    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     bool plita=false;
 
     flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
@@ -316,7 +317,6 @@ void demo_scene(){
 void demo(){
     float dir_pitch = asin(camera.dir_y) * 180.0f / M_PI;
     float dir_yaw   = atan2(camera.dir_x, camera.dir_z) * 180.0f / M_PI;
-    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     if (portals) {
         portals->checkTeleport();
     }
