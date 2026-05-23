@@ -134,7 +134,6 @@ void apply_loaded_map(const MapData& map) {
 
     for (const auto& portalData : map.portals) {
         Portal* newPortal = mapDataToPortal(portalData);
-        newPortal->setSceneDrawCallback([&]() { demo_scene(); });
         if (!portals) {
             portals = newPortal;
         }
@@ -328,7 +327,7 @@ void demo(){
     // stopShader();
 
     if (portals) {
-        portals->draw(2);
+        portals->draw();
     }
 
     flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
@@ -637,8 +636,6 @@ int main(int argc, char** argv){
                      portalVerts,
                      45.0f, 0.0f, 0.0f,
                      0.0f, 0.0f, 0.0f);
-
-    portals->setSceneDrawCallback([&]() {demo_scene();});
 
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
