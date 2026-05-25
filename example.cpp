@@ -650,6 +650,7 @@ int main(int argc, char** argv){
     init_mouse(window);
     stopShader();
     while (!glfwWindowShouldClose(window)){
+        useShader(defaultLightingShader);
         update_ticks();
         update();
         display();
