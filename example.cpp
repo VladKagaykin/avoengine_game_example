@@ -312,15 +312,13 @@ void demo_scene(){
     // radio->setVAngle(radio->getVAngle()+turn_speed);
     // radio->setRAngle(radio->getRAngle()+turn_speed);
     radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
-    draw_line_3d(0, -0.5,0,-10,0,-10,10,0,10,1,1,1,1,50);
+    draw_line_3d(0, -0.5,0,-10,0,-10,10,0,10,1,1,1,1,0.05,16);
     plane(-5,-0.5,5,0.5,0.5,0.5,nullptr,{0.5,0,0.5, 0.5,0,-0.5, -0.5,0,-0.5, -0.5,0,0.5});
 }
 
 void demo(){
-    float dir_pitch = asin(camera.dir_y) * 180.0f / M_PI;
-    float dir_yaw   = atan2(camera.dir_x, camera.dir_z) * 180.0f / M_PI;
     if (portals) {
-        portals->checkTeleport();
+        // portals->checkTeleport();
     }
     if(camera.pitch!=pitch){pitch=camera.pitch;}
     if(camera.yaw!=yaw){yaw=camera.yaw;}
@@ -369,6 +367,7 @@ bool mouse_was_captured = false;
 int toggle_cooldown = 0;
 void update() {
     roll=0;
+    camera.eye_y=0;
     if (menu_cooldown > 0) menu_cooldown--;
     if (toggle_cooldown > 0) toggle_cooldown--;
 
@@ -549,6 +548,8 @@ void update() {
         if (skeys[GLFW_KEY_LEFT])  camera.yaw += turn_speed;
         if (skeys[GLFW_KEY_UP])    camera.pitch += turn_speed;
         if (skeys[GLFW_KEY_DOWN])  camera.pitch -= turn_speed;
+
+        if (skeys[GLFW_KEY_LEFT_SHIFT])  camera.eye_y = -0.5;
 
         float yr = camera.yaw * float(M_PI) / 180.0f;
         float mv = 0.1f;
