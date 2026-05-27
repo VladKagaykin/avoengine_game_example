@@ -92,7 +92,6 @@ void apply_loaded_map(const MapData& map) {
     stop_all_looping_sounds();
 
     for (auto* e : allEntities) {
-        e->setCastShadow(false);
         delete e;
     }
     allEntities.clear();
@@ -121,7 +120,6 @@ void apply_loaded_map(const MapData& map) {
 
     for (const auto& ent : map.entities) {
         pseudo_3d_entity* e = mapDataToEntity(ent);
-        if (ent.castShadow) e->setCastShadow(true);
         registerEntity(e);
     }
 
@@ -281,7 +279,7 @@ void demo_scene(){
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     bool plita=false;
 
-    flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
+    flashlight.setPosition(camera.eye_x, 0.5, camera.eye_z);
     flashlight.setDirectionFromPitchYaw(camera.pitch, camera.yaw);
 
     projector_1.setPosition(-edge, height, edge);
@@ -294,8 +292,6 @@ void demo_scene(){
     projector_4.setDirectionFromPitchYaw(-35, 45);
 
     useShader(defaultLightingShader);
-    applyAllLights();
-    applyAllShadows();
 
     for(float i=-10;i<=10;i+=2){
         for(float j=-10;j<=10;j+=2){
@@ -314,6 +310,9 @@ void demo_scene(){
     radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
     draw_line_3d(0, -0.5,0,-10,0,-10,10,0,10,1,1,1,1,0.05,16);
     plane(-5,-0.5,5,0.5,0.5,0.5,nullptr,{0.5,0,0.5, 0.5,0,-0.5, -0.5,0,-0.5, -0.5,0,0.5});
+    if (portals) {
+        portals->draw();
+    }
 }
 
 void demo(){
@@ -325,14 +324,6 @@ void demo(){
     move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, camera.yaw,roll);
 
     demo_scene();
-    // stopShader();
-
-    if (portals) {
-        portals->draw();
-    }
-
-    flashlight.setPosition(camera.eye_x, camera.eye_y, camera.eye_z);
-    flashlight.setDirectionFromPitchYaw(camera.pitch, camera.yaw);
 
     draw_performance_hud(window_w,window_h);
     float size = 10.0f;
@@ -644,7 +635,6 @@ int main(int argc, char** argv){
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
     enable_fog(0.05, 0.1, 0.1, 0.7, 5, 15);
-    radio->setCastShadow(true);
     init_tick_system();
     init_keyboard(window);
     init_mouse(window);
