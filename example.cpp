@@ -71,6 +71,7 @@ int selected_map_index = 0;
 std::vector<Light*> dynamicLights;
 
 Portal* portals = nullptr;
+Portal* portals_2 = nullptr;
 
 void demo_scene();
 
@@ -279,8 +280,10 @@ void demo_scene(){
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     bool plita=false;
 
-    flashlight.setPosition(camera.eye_x, 0.5, camera.eye_z);
-    flashlight.setDirectionFromPitchYaw(camera.pitch, camera.yaw);
+    flashlight.setPosition(camera.eye_x,camera.eye_y, camera.eye_z);
+    flashlight.dir[0] = camera.dir_x;
+    flashlight.dir[1] = camera.dir_y;
+    flashlight.dir[2] = camera.dir_z;
 
     projector_1.setPosition(-edge, height, edge);
     projector_1.setDirectionFromPitchYaw(-35, 135);
@@ -307,9 +310,19 @@ void demo_scene(){
     // radio->setGAngle(radio->getGAngle()+turn_speed);
     // radio->setVAngle(radio->getVAngle()+turn_speed);
     // radio->setRAngle(radio->getRAngle()+turn_speed);
-    radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
+    // radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
     draw_line_3d(0, -0.5,0,-10,0,-10,10,0,10,1,1,1,1,0.05,16);
-    plane(-5,-0.5,5,0.5,0.5,0.5,nullptr,{0.5,0,0.5, 0.5,0,-0.5, -0.5,0,-0.5, -0.5,0,0.5});
+    // plane(-5,-0.5,5,0.5,0.5,0.5,nullptr,{0.5,0,0.5, 0.5,0,-0.5, -0.5,0,-0.5, -0.5,0,0.5});
+
+    plane(0,0,0,1,0,0,nullptr,{-11,-1,-7, -11,-1,7, -11,1,7, -11,1,-7});
+    plane(0,0,0,1,0,0,nullptr,{-9,-1,-7, -9,-1,7, -9,1,7, -9,1,-7});
+
+    plane(0,0,0,0,1,0,nullptr,{11,-1,-3, 11,-1,3, 11,1,3, 11,1,-3});
+    plane(0,0,0,0,1,0,nullptr,{9,-1,-3, 9,-1,3, 9,1,3, 9,1,-3});
+
+    plane(-10, 1, 0, 1, 0, 0,nullptr, {1,0,7, 1,0,-7, -1,0,-7, -1,0,7});
+    plane(10, 1, 0, 0, 1, 0,nullptr, {1,0,3, 1,0,-3, -1,0,-3, -1,0,3});
+    
     if (portals) {
         portals->draw();
     }
@@ -592,11 +605,11 @@ int main(int argc, char** argv){
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/src/logo.png");
     useShader(defaultLightingShader);
-    enable_light();
     set_ambient_light(0.05f, 0.05f, 0.05f);
-    flashlight.setRadius(15.0f);
+    set_ambient_light(1, 1, 1);
+    flashlight.setRadius(20.0f);
     flashlight.setColor(1.0f, 0.95f, 0.8f);
-    flashlight.setIntensity(1.2f);
+    flashlight.setIntensity(3);
     flashlight.setAttenuation(1.0f, 0.1f, 0.01f);
     flashlight.enable();
 
@@ -627,9 +640,14 @@ int main(int argc, char** argv){
     }
 
     std::vector<float> portalVerts = { -1,-1,0, -1,1,0, 1,1,0, 1,-1,0 };
-    portals = new Portal(5.0f, 0.0f, 5.0f,   -5.0f, 0.0f, -5.0f,
+    portals = new Portal(10.0f, 0.0f, -3.0f, -10.0f, 0.0f, -7.0f,
                      portalVerts,
-                     45.0f, 0.0f, 0.0f,
+                     0.0f, 0.0f, 0.0f,
+                     0.0f, 0.0f, 0.0f);
+
+    portals_2 = new Portal(10.0f, 0.0f, 3.0f, -10.0f, 0.0f, 7.0f,
+                     portalVerts,
+                     0.0f, 0.0f, 0.0f,
                      0.0f, 0.0f, 0.0f);
 
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
