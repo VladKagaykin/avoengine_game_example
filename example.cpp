@@ -323,9 +323,9 @@ void demo_scene(){
     plane(-10, 1, 0, 1, 0, 0,nullptr, {1,0,7, 1,0,-7, -1,0,-7, -1,0,7});
     plane(10, 1, 0, 0, 1, 0,nullptr, {1,0,3, 1,0,-3, -1,0,-3, -1,0,3});
     
-    if (portals) {
-        portals->draw();
-    }
+    portals->draw();
+    portals_2->draw();
+    
 }
 
 void demo(){
