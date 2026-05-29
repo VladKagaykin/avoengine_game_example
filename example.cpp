@@ -276,6 +276,98 @@ void main_panorama(){
     camera.yaw=panorama_move;
 }
 
+WarpPlane warpRing;   
+
+void warp_ring() {
+    warpRing.originX = 0.0f;
+    warpRing.originY = -0.99f;  
+    warpRing.originZ = 0.0f;
+
+    warpRing.yaw   = 0.0f;
+    warpRing.pitch = -90.0f;    
+    warpRing.roll  = 0.0f;
+
+    warpRing.sizeU = 10.0f;      
+    warpRing.sizeV = 10.0f;
+
+    const int texW = 256;
+    const int texH = 256;
+    std::vector<float> dispData(texW * texH * 3, 0.0f);
+
+    const float radius = 4.0f;
+    const float thickness = 3.0f;
+    const float innerR = radius - thickness * 0.5f;  
+    const float outerR = radius + thickness * 0.5f;   
+    const float depth = 1.0f;  
+
+    for (int y = 0; y < texH; ++y) {
+        for (int x = 0; x < texW; ++x) {
+            float u = (x + 0.5f) / texW;
+            float v = (y + 0.5f) / texH;
+
+            float lx = (u - 0.5f) * warpRing.sizeU;
+            float lz = (v - 0.5f) * warpRing.sizeV;
+
+            float dist = std::sqrt(lx * lx + lz * lz);
+
+            float t = glm::smoothstep(innerR, radius, dist) * (1.0f - glm::smoothstep(radius, outerR, dist));
+            float displacement = depth * t;
+
+            int idx = (y * texW + x) * 3;
+            dispData[idx + 0] = 0.0f;
+            dispData[idx + 1] = -displacement;
+            dispData[idx + 2] = 0.0f;
+        }
+    }
+
+    warpRing.setDisplacementFromData(texW, texH, dispData.data());
+    warpRing.enable();   
+}
+
+WarpPlane warpDisc;
+
+void warp_cylinder() {
+    warpDisc.originX = 0.0f;
+    warpDisc.originY = -1.0f;
+    warpDisc.originZ = 0.0f;
+
+    warpDisc.yaw   = 0.0f;
+    warpDisc.pitch = -90.0f;
+    warpDisc.roll  = 0.0f;
+
+    warpDisc.sizeU = 10.0f;
+    warpDisc.sizeV = 10.0f;
+
+    const int texW = 256;
+    const int texH = 256;
+    std::vector<float> dispData(texW * texH * 3, 0.0f);
+
+    const float maxRadius = 4.0f;
+    const float depth = -2.0f;
+
+    for (int y = 0; y < texH; ++y) {
+        float v = (y + 0.5f) / texH;
+        float lz = (v - 0.5f) * warpDisc.sizeV;
+
+        for (int x = 0; x < texW; ++x) {
+            float u = (x + 0.5f) / texW;
+            float lx = (u - 0.5f) * warpDisc.sizeU;
+
+            float dist = std::sqrt(lx * lx + lz * lz);
+            float t = 1.0f - glm::smoothstep(0.0f, maxRadius, dist);
+            float displacement = depth * t;
+
+            int idx = (y * texW + x) * 3;
+            dispData[idx + 0] = 0.0f;
+            dispData[idx + 1] = -displacement;
+            dispData[idx + 2] = 0.0f;
+        }
+    }
+
+    warpDisc.setDisplacementFromData(texW, texH, dispData.data());
+    warpDisc.enable();
+}
+
 void demo_scene(){
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     bool plita=false;
@@ -530,6 +622,8 @@ void update() {
                 prev_mouse_x = mouse_x;
                 prev_mouse_y = mouse_y;
                 mouse_was_captured = true;
+                // warp_ring();
+                warp_cylinder();
             }
         }
     }
