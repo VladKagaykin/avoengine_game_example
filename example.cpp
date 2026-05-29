@@ -530,7 +530,6 @@ void update() {
                 prev_mouse_x = mouse_x;
                 prev_mouse_y = mouse_y;
                 mouse_was_captured = true;
-                play_white_noise_3d(0, -1, 0, 1.0f);
             }
         }
     }
