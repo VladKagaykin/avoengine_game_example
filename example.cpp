@@ -298,7 +298,7 @@ void warp_ring() {
     const float thickness = 3.0f;
     const float innerR = radius - thickness * 0.5f;  
     const float outerR = radius + thickness * 0.5f;   
-    const float depth = 1.0f;  
+    const float depth = -1.0;  
 
     for (int y = 0; y < texH; ++y) {
         for (int x = 0; x < texW; ++x) {
@@ -321,41 +321,41 @@ void warp_ring() {
     }
 
     warpRing.setDisplacementFromData(texW, texH, dispData.data());
-    warpRing.enable();   
+    warpRing.enable();  
+    set_active_warp_plane(&warpRing); 
 }
 
-WarpPlane warpDisc;
+WarpPlane warpCylinder;
 
 void warp_cylinder() {
-    warpDisc.originX = 0.0f;
-    warpDisc.originY = -1.0f;
-    warpDisc.originZ = 0.0f;
+    warpCylinder.originX = 0.0f;
+    warpCylinder.originY = -1.0f;
+    warpCylinder.originZ = 0.0f;
 
-    warpDisc.yaw   = 0.0f;
-    warpDisc.pitch = -90.0f;
-    warpDisc.roll  = 0.0f;
+    warpCylinder.yaw   = 0.0f;
+    warpCylinder.pitch = -90.0f;
+    warpCylinder.roll  = 0.0f;
 
-    warpDisc.sizeU = 10.0f;
-    warpDisc.sizeV = 10.0f;
+    warpCylinder.sizeU = 10.0f;
+    warpCylinder.sizeV = 10.0f;
 
     const int texW = 256;
     const int texH = 256;
     std::vector<float> dispData(texW * texH * 3, 0.0f);
 
-    const float maxRadius = 4.0f;
-    const float depth = -2.0f;
+    const float radius = 3.0f;
+    const float depth  = 2.0f;
 
     for (int y = 0; y < texH; ++y) {
         float v = (y + 0.5f) / texH;
-        float lz = (v - 0.5f) * warpDisc.sizeV;
+        float lz = (v - 0.5f) * warpCylinder.sizeV;
 
         for (int x = 0; x < texW; ++x) {
             float u = (x + 0.5f) / texW;
-            float lx = (u - 0.5f) * warpDisc.sizeU;
+            float lx = (u - 0.5f) * warpCylinder.sizeU;
 
             float dist = std::sqrt(lx * lx + lz * lz);
-            float t = 1.0f - glm::smoothstep(0.0f, maxRadius, dist);
-            float displacement = depth * t;
+            float displacement = (dist <= radius) ? depth : 0.0f;
 
             int idx = (y * texW + x) * 3;
             dispData[idx + 0] = 0.0f;
@@ -364,8 +364,218 @@ void warp_cylinder() {
         }
     }
 
-    warpDisc.setDisplacementFromData(texW, texH, dispData.data());
-    warpDisc.enable();
+    warpCylinder.setDisplacementFromData(texW, texH, dispData.data());
+    warpCylinder.enable();
+    set_active_warp_plane(&warpCylinder); 
+}
+
+static glm::vec3 getWarpDisplacement(float u, float v) {
+    if (!activeWarpPlane || !activeWarpPlane->enabled || !activeWarpPlane->displacementTex)
+        return glm::vec3(0.0f);
+
+    static std::vector<float> dispData;
+    static GLuint lastTex = 0;
+    static int lastW = 0, lastH = 0;
+
+    if (lastTex != activeWarpPlane->displacementTex) {
+        glBindTexture(GL_TEXTURE_2D, activeWarpPlane->displacementTex);
+        GLint w, h;
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+        dispData.resize(w * h * 3);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, dispData.data());
+        glBindTexture(GL_TEXTURE_2D, 0);
+        lastTex = activeWarpPlane->displacementTex;
+        lastW = w; lastH = h;
+    }
+
+    if (lastW == 0 || lastH == 0) return glm::vec3(0.0f);
+
+    float x = u * (lastW - 1);
+    float y = v * (lastH - 1);
+    int x0 = std::max(0, std::min(lastW - 1, (int)floor(x)));
+    int y0 = std::max(0, std::min(lastH - 1, (int)floor(y)));
+    int x1 = std::max(0, std::min(lastW - 1, x0 + 1));
+    int y1 = std::max(0, std::min(lastH - 1, y0 + 1));
+    float fx = x - x0, fy = y - y0;
+
+    auto sample = [&](int xi, int yi) -> glm::vec3 {
+        int idx = (yi * lastW + xi) * 3;
+        return glm::vec3(dispData[idx], dispData[idx+1], dispData[idx+2]);
+    };
+
+    glm::vec3 v00 = sample(x0, y0);
+    glm::vec3 v10 = sample(x1, y0);
+    glm::vec3 v01 = sample(x0, y1);
+    glm::vec3 v11 = sample(x1, y1);
+
+    glm::vec3 v0 = glm::mix(v00, v10, fx);
+    glm::vec3 v1 = glm::mix(v01, v11, fx);
+    return glm::mix(v0, v1, fy);
+}
+
+void draw_warp_minimap() {
+    if (!activeWarpPlane || !activeWarpPlane->enabled) return;
+
+    glm::mat4 rot = glm::mat4(1.0f);
+    rot = glm::rotate(rot, glm::radians(activeWarpPlane->yaw),   glm::vec3(0,1,0));
+    rot = glm::rotate(rot, glm::radians(activeWarpPlane->pitch), glm::vec3(1,0,0));
+    rot = glm::rotate(rot, glm::radians(activeWarpPlane->roll),  glm::vec3(0,0,1));
+    glm::vec3 uAxis = glm::vec3(rot * glm::vec4(activeWarpPlane->sizeU, 0, 0, 0));
+    glm::vec3 vAxis = glm::vec3(rot * glm::vec4(0, activeWarpPlane->sizeV, 0, 0));
+    glm::vec3 origin(activeWarpPlane->originX, activeWarpPlane->originY, activeWarpPlane->originZ);
+
+    glm::vec3 corners[4] = {
+        origin + uAxis * 0.5f + vAxis * 0.5f,
+        origin - uAxis * 0.5f + vAxis * 0.5f,
+        origin - uAxis * 0.5f - vAxis * 0.5f,
+        origin + uAxis * 0.5f - vAxis * 0.5f
+    };
+
+    const float mapSize   = 120.0f;
+    const float margin    = 10.0f;
+    const float gap       = 5.0f;
+    const float startX    = window_w - (3 * mapSize + 2 * gap) - margin;
+    const float startY    = margin;
+    const float labelY    = startY + mapSize + 4.0f;
+
+    struct Proj { int axis1, axis2; const char* label; };
+    Proj projs[3] = {
+        {0, 2, "Top"},
+        {0, 1, "Front"},
+        {2, 1, "Side"}
+    };
+
+    for (int p = 0; p < 3; p++) {
+        float offX = startX + p * (mapSize + gap);
+        float offY = startY;
+
+        float minX = corners[0][projs[p].axis1], maxX = minX;
+        float minY = corners[0][projs[p].axis2], maxY = minY;
+        for (int i = 1; i < 4; i++) {
+            minX = fmin(minX, corners[i][projs[p].axis1]);
+            maxX = fmax(maxX, corners[i][projs[p].axis1]);
+            minY = fmin(minY, corners[i][projs[p].axis2]);
+            maxY = fmax(maxY, corners[i][projs[p].axis2]);
+        }
+
+        float camX_raw = (projs[p].axis1 == 0) ? camera.eye_x :
+                         (projs[p].axis1 == 2) ? camera.eye_z : camera.eye_y;
+        float camY_raw = (projs[p].axis2 == 0) ? camera.eye_x :
+                         (projs[p].axis2 == 2) ? camera.eye_z : camera.eye_y;
+        float camX_screen = camX_raw;
+        float camY_screen = camY_raw;
+
+        if (p == 0) {
+            minX = fmin(minX, camX_raw); maxX = fmax(maxX, camX_raw);
+            minY = fmin(minY, camY_raw); maxY = fmax(maxY, camY_raw);
+        } else {      
+            float u_cam = 0.5f, v_cam = 0.5f;
+            if (p == 1) { 
+                if (fabs(uAxis.x) > 0.001f)
+                    u_cam = (camera.eye_x - origin.x) / uAxis.x + 0.5f;
+                else if (fabs(uAxis.z) > 0.001f)
+                    u_cam = (camera.eye_x - origin.z) / uAxis.z + 0.5f;
+                v_cam = 0.5f;
+            } else {       
+                if (fabs(vAxis.z) > 0.001f)
+                    v_cam = (camera.eye_z - origin.z) / vAxis.z + 0.5f;
+                else if (fabs(vAxis.x) > 0.001f)
+                    v_cam = (camera.eye_z - origin.x) / vAxis.x + 0.5f;
+                u_cam = 0.5f;
+            }
+            u_cam = glm::clamp(u_cam, 0.0f, 1.0f);
+            v_cam = glm::clamp(v_cam, 0.0f, 1.0f);
+            glm::vec3 disp_cam = getWarpDisplacement(u_cam, v_cam);
+            float baseY = origin.y + uAxis.y * (u_cam - 0.5f) + vAxis.y * (v_cam - 0.5f);
+            camY_screen = baseY + disp_cam.y; 
+
+            float minProfY = 1e9f, maxProfY = -1e9f;
+            int steps = 60;
+            for (int i = 0; i <= steps; i++) {
+                float t = i / (float)steps;
+                float u = (p == 1) ? t : 0.5f;
+                float v = (p == 1) ? 0.5f : t;
+                glm::vec3 d = getWarpDisplacement(u, v);
+                float wy = origin.y + uAxis.y * (u - 0.5f) + vAxis.y * (v - 0.5f) + d.y;
+                minProfY = fmin(minProfY, wy);
+                maxProfY = fmax(maxProfY, wy);
+            }
+            minY = fmin(minY, minProfY);
+            maxY = fmax(maxY, maxProfY);
+            minY = fmin(minY, camY_screen);
+            maxY = fmax(maxY, camY_screen);
+            minX = fmin(minX, camX_raw);
+            maxX = fmax(maxX, camX_raw);
+        }
+
+        float rangeX = maxX - minX, rangeY = maxY - minY;
+        if (rangeX < 0.01f) rangeX = 1.0f;
+        if (rangeY < 0.01f) rangeY = 1.0f;
+        minX -= rangeX * 0.1f; maxX += rangeX * 0.1f;
+        minY -= rangeY * 0.1f; maxY += rangeY * 0.1f;
+        rangeX = maxX - minX; rangeY = maxY - minY;
+
+        auto toScreen = [&](float wx, float wy) -> std::pair<float,float> {
+            float sx = offX + (wx - minX) / rangeX * mapSize;
+            float sy = offY + (wy - minY) / rangeY * mapSize;
+            return {sx, sy};
+        };
+
+        if (p == 0) {   
+            const int gridRes = 10;
+            auto planePoint = [&](float u, float v) -> glm::vec3 {
+                return origin + uAxis * (u - 0.5f) + vAxis * (v - 0.5f);
+            };
+            for (int iv = 0; iv <= gridRes; iv++) {
+                float v = iv / (float)gridRes;
+                glm::vec3 p0 = planePoint(0.0f, v);
+                glm::vec3 p1 = planePoint(1.0f, v);
+                auto s0 = toScreen(p0[projs[p].axis1], p0[projs[p].axis2]);
+                auto s1 = toScreen(p1[projs[p].axis1], p1[projs[p].axis2]);
+                draw_line_2d(0, 0, s0.first, s0.second, s1.first, s1.second, 1,1,1,1, 0.5f);
+            }
+            for (int iu = 0; iu <= gridRes; iu++) {
+                float u = iu / (float)gridRes;
+                glm::vec3 p0 = planePoint(u, 0.0f);
+                glm::vec3 p1 = planePoint(u, 1.0f);
+                auto s0 = toScreen(p0[projs[p].axis1], p0[projs[p].axis2]);
+                auto s1 = toScreen(p1[projs[p].axis1], p1[projs[p].axis2]);
+                draw_line_2d(0, 0, s0.first, s0.second, s1.first, s1.second, 1,1,1,1, 0.5f);
+            }
+        } else {        
+            int steps = 60;
+            bool first = true;
+            float prevSX = 0, prevSY = 0;
+            for (int i = 0; i <= steps; i++) {
+                float t = i / (float)steps;
+                float u = (p == 1) ? t : 0.5f;
+                float v = (p == 1) ? 0.5f : t;
+                glm::vec3 disp = getWarpDisplacement(u, v);
+                float worldX = origin.x + uAxis.x * (u - 0.5f) + vAxis.x * (v - 0.5f);
+                float worldY = origin.y + uAxis.y * (u - 0.5f) + vAxis.y * (v - 0.5f) + disp.y;
+                float worldZ = origin.z + uAxis.z * (u - 0.5f) + vAxis.z * (v - 0.5f);
+                float wx = (p == 1) ? worldX : worldZ;
+                float wy = worldY;
+                auto pt = toScreen(wx, wy);
+                if (!first) {
+                    draw_line_2d(0, 0, prevSX, prevSY, pt.first, pt.second, 1,1,1,1, 1.5f);
+                }
+                prevSX = pt.first; prevSY = pt.second;
+                first = false;
+            }
+        }
+
+        auto camPt = toScreen(camX_screen, camY_screen);
+        float ptSize = 4.0f;
+        float verts[8] = { camPt.first-ptSize, camPt.second-ptSize,
+                           camPt.first+ptSize, camPt.second-ptSize,
+                           camPt.first+ptSize, camPt.second+ptSize,
+                           camPt.first-ptSize, camPt.second+ptSize };
+        square(1.0f, 0, 0, 1.0, 0.0, 0.0, 0, verts, nullptr, 1.0f);
+
+        draw_text(projs[p].label, offX, labelY, GLUT_BITMAP_HELVETICA_12, 1,1,1, 1);
+    }
 }
 
 void demo_scene(){
@@ -437,6 +647,8 @@ void demo(){
     // square(size, centerX, centerY, 1,1,1, 0, verts_square, "src/penza_low.png");
     draw_line_2d(centerX, centerY,  20,  20, -20, -20,  1,1,1,1, 2);  
     draw_line_2d(centerX, centerY, -20,  20,  20, -20,  1,1,1,1, 2);
+
+    draw_warp_minimap();
 }
 
 void display(){
@@ -622,8 +834,8 @@ void update() {
                 prev_mouse_x = mouse_x;
                 prev_mouse_y = mouse_y;
                 mouse_was_captured = true;
-                // warp_ring();
-                warp_cylinder();
+                warp_ring();
+                // warp_cylinder();
             }
         }
     }
@@ -699,7 +911,7 @@ int main(int argc, char** argv){
     set_icon("avoengine_opengl/src/logo.png");
     useShader(defaultLightingShader);
     set_ambient_light(0.05f, 0.05f, 0.05f);
-    set_ambient_light(1, 1, 1);
+    set_ambient_light(0.7, 0.7, 0.7);
     flashlight.setRadius(20.0f);
     flashlight.setColor(1.0f, 0.95f, 0.8f);
     flashlight.setIntensity(3);
