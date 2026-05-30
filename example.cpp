@@ -298,7 +298,7 @@ void warp_ring() {
     const float thickness = 3.0f;
     const float innerR = radius - thickness * 0.5f;  
     const float outerR = radius + thickness * 0.5f;   
-    const float depth = -1.0;  
+    const float depth = 1.0;  
 
     for (int y = 0; y < texH; ++y) {
         for (int x = 0; x < texW; ++x) {
@@ -834,8 +834,8 @@ void update() {
                 prev_mouse_x = mouse_x;
                 prev_mouse_y = mouse_y;
                 mouse_was_captured = true;
-                warp_ring();
-                // warp_cylinder();
+                // warp_ring();
+                warp_cylinder();
             }
         }
     }
