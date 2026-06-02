@@ -596,7 +596,7 @@ void demo_scene(){
     projector_4.setPosition(-edge, height, -edge);
     projector_4.setDirectionFromPitchYaw(-35, 45);
 
-    useShader(defaultLightingShader);
+    useShader(defaultVBOLightingShader);
 
     for(float i=-10;i<=10;i+=2){
         for(float j=-10;j<=10;j+=2){
@@ -909,7 +909,8 @@ int main(int argc, char** argv){
 
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/src/logo.png");
-    useShader(defaultLightingShader);
+    is_raycast=0;
+    useShader(defaultVBOLightingShader);
     set_ambient_light(0.05f, 0.05f, 0.05f);
     set_ambient_light(0.7, 0.7, 0.7);
     flashlight.setRadius(20.0f);
@@ -963,7 +964,7 @@ int main(int argc, char** argv){
     init_mouse(window);
     stopShader();
     while (!glfwWindowShouldClose(window)){
-        useShader(defaultLightingShader);
+        useShader(defaultVBOLightingShader);
         update_ticks();
         update();
         display();
