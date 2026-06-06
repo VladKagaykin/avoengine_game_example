@@ -624,10 +624,10 @@ void demo_scene(){
 
     plane(-10, 1, 0, 0.7, 0, 0,nullptr, {1,0,7, 1,0,-7, -1,0,-7, -1,0,7});
     plane(10, 1, 0, 0, 0.7, 0,nullptr, {1,0,3, 1,0,-3, -1,0,-3, -1,0,3});
-    
-    portals->draw();
-    portals_2->draw();
-    
+    if(is_raycast){
+        portals->draw();
+        portals_2->draw();
+    }
 }
 
 void demo(){
@@ -639,6 +639,11 @@ void demo(){
     move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, camera.yaw,roll);
 
     demo_scene();
+
+    if(!is_raycast){
+        portals->draw();
+        portals_2->draw();
+    }
 
     draw_performance_hud(window_w,window_h);
     float size = 10.0f;
@@ -835,7 +840,7 @@ void update() {
                 prev_mouse_y = mouse_y;
                 mouse_was_captured = true;
                 // warp_ring();
-                warp_cylinder();
+                // warp_cylinder();
             }
         }
     }
@@ -912,7 +917,7 @@ int main(int argc, char** argv){
     is_raycast=0;
     useShader(defaultVBOLightingShader);
     set_ambient_light(0.05f, 0.05f, 0.05f);
-    set_ambient_light(0.7, 0.7, 0.7);
+    // set_ambient_light(0.7, 0.7, 0.7);
     flashlight.setRadius(20.0f);
     flashlight.setColor(1.0f, 0.95f, 0.8f);
     flashlight.setIntensity(3);
@@ -955,6 +960,11 @@ int main(int argc, char** argv){
                      portalVerts,
                      0.0f, 0.0f, 0.0f,
                      0.0f, 0.0f, 0.0f);
+
+    if(!is_raycast){
+        portals->setSceneDrawCallback(demo_scene);
+        portals_2->setSceneDrawCallback(demo_scene);
+    }
 
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
