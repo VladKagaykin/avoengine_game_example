@@ -596,7 +596,7 @@ void demo_scene(){
     projector_4.setPosition(-edge, height, -edge);
     projector_4.setDirectionFromPitchYaw(-35, 45);
 
-    useShader(defaultVBOLightingShader);
+    useShader(defaultLightingShader);
 
     for(float i=-10;i<=10;i+=2){
         for(float j=-10;j<=10;j+=2){
@@ -624,10 +624,9 @@ void demo_scene(){
 
     plane(-10, 1, 0, 0.7, 0, 0,nullptr, {1,0,7, 1,0,-7, -1,0,-7, -1,0,7});
     plane(10, 1, 0, 0, 0.7, 0,nullptr, {1,0,3, 1,0,-3, -1,0,-3, -1,0,3});
-    if(is_raycast){
-        portals->draw();
-        portals_2->draw();
-    }
+   
+    portals->draw();
+    portals_2->draw();
 }
 
 void demo(){
@@ -639,11 +638,6 @@ void demo(){
     move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, camera.yaw,roll);
 
     demo_scene();
-
-    if(!is_raycast){
-        portals->draw();
-        portals_2->draw();
-    }
 
     draw_performance_hud(window_w,window_h);
     float size = 10.0f;
@@ -914,8 +908,7 @@ int main(int argc, char** argv){
 
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/src/logo.png");
-    is_raycast=0;
-    useShader(defaultVBOLightingShader);
+    useShader(defaultLightingShader);
     set_ambient_light(0.05f, 0.05f, 0.05f);
     // set_ambient_light(0.7, 0.7, 0.7);
     flashlight.setRadius(20.0f);
@@ -961,11 +954,6 @@ int main(int argc, char** argv){
                      0.0f, 0.0f, 0.0f,
                      0.0f, 0.0f, 0.0f);
 
-    if(!is_raycast){
-        portals->setSceneDrawCallback(demo_scene);
-        portals_2->setSceneDrawCallback(demo_scene);
-    }
-
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama("src/stargazer.png");
     enable_fog(0.05, 0.1, 0.1, 0.7, 5, 15);
@@ -974,7 +962,7 @@ int main(int argc, char** argv){
     init_mouse(window);
     stopShader();
     while (!glfwWindowShouldClose(window)){
-        useShader(defaultVBOLightingShader);
+        useShader(defaultLightingShader);
         update_ticks();
         update();
         display();
