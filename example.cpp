@@ -881,7 +881,7 @@ void update() {
         if (keys[GLFW_KEY_A]) {
             camera.eye_x += cosf(yr) * mv;
             camera.eye_z -= sinf(yr) * mv;
-            roll = 5;
+            roll = -5;
             if (absolute_tick % delay == 0 && last_footstep != absolute_tick) {
                 play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
                 last_footstep = absolute_tick;
@@ -890,7 +890,7 @@ void update() {
         if (keys[GLFW_KEY_D]) {
             camera.eye_x -= cosf(yr) * mv;
             camera.eye_z += sinf(yr) * mv;
-            roll = -5;
+            roll = 5;
             if (absolute_tick % delay == 0 && last_footstep != absolute_tick) {
                 play_sound_3d("src/footstep.wav", camera.eye_x, camera.ctr_y - 1, camera.eye_z);
                 last_footstep = absolute_tick;
