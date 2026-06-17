@@ -419,9 +419,9 @@ void draw_warp_minimap() {
     if (!activeWarpPlane || !activeWarpPlane->enabled) return;
 
     glm::mat4 rot = glm::mat4(1.0f);
-    rot = glm::rotate(rot, glm::radians(activeWarpPlane->yaw),   glm::vec3(0,1,0));
+    rot = glm::rotate(rot, glm::radians(activeWarpPlane->yaw), glm::vec3(0,1,0));
     rot = glm::rotate(rot, glm::radians(activeWarpPlane->pitch), glm::vec3(1,0,0));
-    rot = glm::rotate(rot, glm::radians(activeWarpPlane->roll),  glm::vec3(0,0,1));
+    rot = glm::rotate(rot, glm::radians(activeWarpPlane->roll), glm::vec3(0,0,1));
     glm::vec3 uAxis = glm::vec3(rot * glm::vec4(activeWarpPlane->sizeU, 0, 0, 0));
     glm::vec3 vAxis = glm::vec3(rot * glm::vec4(0, activeWarpPlane->sizeV, 0, 0));
     glm::vec3 origin(activeWarpPlane->originX, activeWarpPlane->originY, activeWarpPlane->originZ);
@@ -433,148 +433,160 @@ void draw_warp_minimap() {
         origin + uAxis * 0.5f - vAxis * 0.5f
     };
 
-    const float mapSize   = 120.0f;
-    const float margin    = 10.0f;
-    const float gap       = 5.0f;
-    const float startX    = window_w - (3 * mapSize + 2 * gap) - margin;
-    const float startY    = margin;
-    const float labelY    = startY + mapSize + 4.0f;
+    const float mapSize = 120.0f;
+    const float margin = 10.0f;
+    const float gap = 5.0f;
+    const float startX = window_w - (3 * mapSize + 2 * gap) - margin;
+    const float startY = margin;
+    const float liftAmount = 50.0f;
 
     struct Proj { int axis1, axis2; const char* label; };
-    Proj projs[3] = {
-        {0, 2, "Top"},
-        {0, 1, "Front"},
-        {2, 1, "Side"}
+    Proj projs[3] = { {0,2,"Top"}, {0,1,"Front"}, {2,1,"Side"} };
+
+    auto projectPoint = [&](const glm::vec3& p, int ax1, int ax2) -> glm::vec2 {
+        return glm::vec2(p[ax1], p[ax2]);
     };
 
-    for (int p = 0; p < 3; p++) {
+    for (int p = 0; p < 3; ++p) {
         float offX = startX + p * (mapSize + gap);
-        float offY = startY;
 
-        float minX = corners[0][projs[p].axis1], maxX = minX;
-        float minY = corners[0][projs[p].axis2], maxY = minY;
-        for (int i = 1; i < 4; i++) {
-            minX = fmin(minX, corners[i][projs[p].axis1]);
-            maxX = fmax(maxX, corners[i][projs[p].axis1]);
-            minY = fmin(minY, corners[i][projs[p].axis2]);
-            maxY = fmax(maxY, corners[i][projs[p].axis2]);
-        }
+        // Сетка: для Front и Side поднимается, Top остаётся на месте
+        float gridOffY = startY;
+        if (p == 1 || p == 2) gridOffY += liftAmount;
 
-        float camX_raw = (projs[p].axis1 == 0) ? camera.eye_x :
-                         (projs[p].axis1 == 2) ? camera.eye_z : camera.eye_y;
-        float camY_raw = (projs[p].axis2 == 0) ? camera.eye_x :
-                         (projs[p].axis2 == 2) ? camera.eye_z : camera.eye_y;
-        float camX_screen = camX_raw;
-        float camY_screen = camY_raw;
+        // Камера и текст: всегда на уровне startY (как у Top)
+        float indicatorOffY = startY;  // для камеры и текста
+        float labelY = indicatorOffY + mapSize + 4.0f;  // подпись под панелью
+
+        int ax1 = projs[p].axis1;
+        int ax2 = projs[p].axis2;
+
+        float minX = 1e9f, maxX = -1e9f, minY = 1e9f, maxY = -1e9f;
+        const int gridRes = 20;
 
         if (p == 0) {
-            minX = fmin(minX, camX_raw); maxX = fmax(maxX, camX_raw);
-            minY = fmin(minY, camY_raw); maxY = fmax(maxY, camY_raw);
-        } else {      
-            float u_cam = 0.5f, v_cam = 0.5f;
-            if (p == 1) { 
-                if (fabs(uAxis.x) > 0.001f)
-                    u_cam = (camera.eye_x - origin.x) / uAxis.x + 0.5f;
-                else if (fabs(uAxis.z) > 0.001f)
-                    u_cam = (camera.eye_x - origin.z) / uAxis.z + 0.5f;
-                v_cam = 0.5f;
-            } else {       
-                if (fabs(vAxis.z) > 0.001f)
-                    v_cam = (camera.eye_z - origin.z) / vAxis.z + 0.5f;
-                else if (fabs(vAxis.x) > 0.001f)
-                    v_cam = (camera.eye_z - origin.x) / vAxis.x + 0.5f;
-                u_cam = 0.5f;
+            for (int i = 0; i < 4; ++i) {
+                glm::vec2 pt = projectPoint(corners[i], ax1, ax2);
+                minX = fmin(minX, pt.x); maxX = fmax(maxX, pt.x);
+                minY = fmin(minY, pt.y); maxY = fmax(maxY, pt.y);
             }
-            u_cam = glm::clamp(u_cam, 0.0f, 1.0f);
-            v_cam = glm::clamp(v_cam, 0.0f, 1.0f);
-            glm::vec3 disp_cam = getWarpDisplacement(u_cam, v_cam);
-            float baseY = origin.y + uAxis.y * (u_cam - 0.5f) + vAxis.y * (v_cam - 0.5f);
-            camY_screen = baseY + disp_cam.y; 
-
-            float minProfY = 1e9f, maxProfY = -1e9f;
-            int steps = 60;
-            for (int i = 0; i <= steps; i++) {
-                float t = i / (float)steps;
-                float u = (p == 1) ? t : 0.5f;
-                float v = (p == 1) ? 0.5f : t;
-                glm::vec3 d = getWarpDisplacement(u, v);
-                float wy = origin.y + uAxis.y * (u - 0.5f) + vAxis.y * (v - 0.5f) + d.y;
-                minProfY = fmin(minProfY, wy);
-                maxProfY = fmax(maxProfY, wy);
+        } else {
+            for (int iu = 0; iu <= gridRes; ++iu) {
+                float u = iu / (float)gridRes;
+                for (int iv = 0; iv <= gridRes; ++iv) {
+                    float v = iv / (float)gridRes;
+                    glm::vec3 pos = origin + uAxis * (u - 0.5f) + vAxis * (v - 0.5f) + getWarpDisplacement(u, v);
+                    glm::vec2 pt = projectPoint(pos, ax1, ax2);
+                    minX = fmin(minX, pt.x); maxX = fmax(maxX, pt.x);
+                    minY = fmin(minY, pt.y); maxY = fmax(maxY, pt.y);
+                }
             }
-            minY = fmin(minY, minProfY);
-            maxY = fmax(maxY, maxProfY);
-            minY = fmin(minY, camY_screen);
-            maxY = fmax(maxY, camY_screen);
-            minX = fmin(minX, camX_raw);
-            maxX = fmax(maxX, camX_raw);
         }
 
-        float rangeX = maxX - minX, rangeY = maxY - minY;
+        glm::vec3 camPos(camera.eye_x, camera.eye_y, camera.eye_z);
+        glm::vec2 camProj = projectPoint(camPos, ax1, ax2);
+        minX = fmin(minX, camProj.x); maxX = fmax(maxX, camProj.x);
+        minY = fmin(minY, camProj.y); maxY = fmax(maxY, camProj.y);
+
+        float rangeX = maxX - minX;
+        float rangeY = maxY - minY;
         if (rangeX < 0.01f) rangeX = 1.0f;
         if (rangeY < 0.01f) rangeY = 1.0f;
-        minX -= rangeX * 0.1f; maxX += rangeX * 0.1f;
-        minY -= rangeY * 0.1f; maxY += rangeY * 0.1f;
-        rangeX = maxX - minX; rangeY = maxY - minY;
+        minX -= rangeX * 0.1f;
+        maxX += rangeX * 0.1f;
+        minY -= rangeY * 0.1f;
+        maxY += rangeY * 0.1f;
 
-        auto toScreen = [&](float wx, float wy) -> std::pair<float,float> {
-            float sx = offX + (wx - minX) / rangeX * mapSize;
-            float sy = offY + (wy - minY) / rangeY * mapSize;
-            return {sx, sy};
+        // Экранные координаты для сетки
+        auto toScreenGrid = [&](float wx, float wy) -> std::pair<float,float> {
+            return { offX + (wx - minX) / (maxX - minX) * mapSize,
+                     gridOffY + (wy - minY) / (maxY - minY) * mapSize };
         };
 
-        if (p == 0) {   
-            const int gridRes = 10;
-            auto planePoint = [&](float u, float v) -> glm::vec3 {
-                return origin + uAxis * (u - 0.5f) + vAxis * (v - 0.5f);
-            };
-            for (int iv = 0; iv <= gridRes; iv++) {
+        // Отрисовка сетки (использует gridOffY)
+        if (p == 0) {
+            const int gridTop = 10;
+            for (int iv = 0; iv <= gridTop; ++iv) {
+                float v = iv / (float)gridTop;
+                glm::vec3 p0 = origin + uAxis * (-0.5f) + vAxis * (v - 0.5f);
+                glm::vec3 p1 = origin + uAxis * (0.5f) + vAxis * (v - 0.5f);
+                glm::vec2 s0 = projectPoint(p0, ax1, ax2);
+                glm::vec2 s1 = projectPoint(p1, ax1, ax2);
+                auto scr0 = toScreenGrid(s0.x, s0.y);
+                auto scr1 = toScreenGrid(s1.x, s1.y);
+                draw_line_2d(0,0, scr0.first,scr0.second, scr1.first,scr1.second, 1,1,1,1, 0.5f);
+            }
+            for (int iu = 0; iu <= gridTop; ++iu) {
+                float u = iu / (float)gridTop;
+                glm::vec3 p0 = origin + uAxis * (u - 0.5f) + vAxis * (-0.5f);
+                glm::vec3 p1 = origin + uAxis * (u - 0.5f) + vAxis * (0.5f);
+                glm::vec2 s0 = projectPoint(p0, ax1, ax2);
+                glm::vec2 s1 = projectPoint(p1, ax1, ax2);
+                auto scr0 = toScreenGrid(s0.x, s0.y);
+                auto scr1 = toScreenGrid(s1.x, s1.y);
+                draw_line_2d(0,0, scr0.first,scr0.second, scr1.first,scr1.second, 1,1,1,1, 0.5f);
+            }
+        } else {
+            for (int iv = 0; iv <= gridRes; ++iv) {
                 float v = iv / (float)gridRes;
-                glm::vec3 p0 = planePoint(0.0f, v);
-                glm::vec3 p1 = planePoint(1.0f, v);
-                auto s0 = toScreen(p0[projs[p].axis1], p0[projs[p].axis2]);
-                auto s1 = toScreen(p1[projs[p].axis1], p1[projs[p].axis2]);
-                draw_line_2d(0, 0, s0.first, s0.second, s1.first, s1.second, 1,1,1,1, 0.5f);
-            }
-            for (int iu = 0; iu <= gridRes; iu++) {
-                float u = iu / (float)gridRes;
-                glm::vec3 p0 = planePoint(u, 0.0f);
-                glm::vec3 p1 = planePoint(u, 1.0f);
-                auto s0 = toScreen(p0[projs[p].axis1], p0[projs[p].axis2]);
-                auto s1 = toScreen(p1[projs[p].axis1], p1[projs[p].axis2]);
-                draw_line_2d(0, 0, s0.first, s0.second, s1.first, s1.second, 1,1,1,1, 0.5f);
-            }
-        } else {        
-            int steps = 60;
-            bool first = true;
-            float prevSX = 0, prevSY = 0;
-            for (int i = 0; i <= steps; i++) {
-                float t = i / (float)steps;
-                float u = (p == 1) ? t : 0.5f;
-                float v = (p == 1) ? 0.5f : t;
-                glm::vec3 disp = getWarpDisplacement(u, v);
-                float worldX = origin.x + uAxis.x * (u - 0.5f) + vAxis.x * (v - 0.5f);
-                float worldY = origin.y + uAxis.y * (u - 0.5f) + vAxis.y * (v - 0.5f) + disp.y;
-                float worldZ = origin.z + uAxis.z * (u - 0.5f) + vAxis.z * (v - 0.5f);
-                float wx = (p == 1) ? worldX : worldZ;
-                float wy = worldY;
-                auto pt = toScreen(wx, wy);
-                if (!first) {
-                    draw_line_2d(0, 0, prevSX, prevSY, pt.first, pt.second, 1,1,1,1, 1.5f);
+                for (int iu = 0; iu < gridRes; ++iu) {
+                    float u = iu / (float)gridRes;
+                    glm::vec3 pos = origin + uAxis * (u - 0.5f) + vAxis * (v - 0.5f) + getWarpDisplacement(u, v);
+                    float uNext = (iu + 1) / (float)gridRes;
+                    glm::vec3 posNext = origin + uAxis * (uNext - 0.5f) + vAxis * (v - 0.5f) + getWarpDisplacement(uNext, v);
+                    glm::vec2 pt = projectPoint(pos, ax1, ax2);
+                    glm::vec2 ptNext = projectPoint(posNext, ax1, ax2);
+                    auto scr = toScreenGrid(pt.x, pt.y);
+                    auto scrN = toScreenGrid(ptNext.x, ptNext.y);
+                    draw_line_2d(0,0, scr.first,scr.second, scrN.first,scrN.second, 1,1,1,1, 0.5f);
                 }
-                prevSX = pt.first; prevSY = pt.second;
-                first = false;
+            }
+            for (int iu = 0; iu <= gridRes; ++iu) {
+                float u = iu / (float)gridRes;
+                for (int iv = 0; iv < gridRes; ++iv) {
+                    float v = iv / (float)gridRes;
+                    glm::vec3 pos = origin + uAxis * (u - 0.5f) + vAxis * (v - 0.5f) + getWarpDisplacement(u, v);
+                    float vNext = (iv + 1) / (float)gridRes;
+                    glm::vec3 posNext = origin + uAxis * (u - 0.5f) + vAxis * (vNext - 0.5f) + getWarpDisplacement(u, vNext);
+                    glm::vec2 pt = projectPoint(pos, ax1, ax2);
+                    glm::vec2 ptNext = projectPoint(posNext, ax1, ax2);
+                    auto scr = toScreenGrid(pt.x, pt.y);
+                    auto scrN = toScreenGrid(ptNext.x, ptNext.y);
+                    draw_line_2d(0,0, scr.first,scr.second, scrN.first,scrN.second, 1,1,1,1, 0.5f);
+                }
             }
         }
 
-        auto camPt = toScreen(camX_screen, camY_screen);
+        // Позиция камеры
+        glm::vec3 rel = camPos - origin;
+        glm::mat3 invBasis = glm::inverse(glm::mat3(uAxis, vAxis, glm::cross(uAxis, vAxis)));
+        glm::vec3 local = invBasis * rel;
+        float u_cam = local.x + 0.5f;
+        float v_cam = local.y + 0.5f;
+        bool inside = (u_cam >= 0.0f && u_cam <= 1.0f && v_cam >= 0.0f && v_cam <= 1.0f);
+        glm::vec3 camPosCorrected = camPos;
+        if (inside) {
+            glm::vec3 disp = getWarpDisplacement(u_cam, v_cam);
+            camPosCorrected += disp;
+        }
+        glm::vec2 camProjCorrected = projectPoint(camPosCorrected, ax1, ax2);
+
+        // Вычисляем экранные координаты камеры относительно **сетки** (чтобы позиция была верной)
+        auto camScreenGrid = toScreenGrid(camProjCorrected.x, camProjCorrected.y);
+
+        // Для отрисовки камеры опускаем Y до indicatorOffY
+        float camDrawY = camScreenGrid.second - (gridOffY - indicatorOffY);
+
         float ptSize = 4.0f;
-        float verts[8] = { camPt.first-ptSize, camPt.second-ptSize,
-                           camPt.first+ptSize, camPt.second-ptSize,
-                           camPt.first+ptSize, camPt.second+ptSize,
-                           camPt.first-ptSize, camPt.second+ptSize };
+        float verts[8] = {
+            camScreenGrid.first - ptSize, camDrawY - ptSize,
+            camScreenGrid.first + ptSize, camDrawY - ptSize,
+            camScreenGrid.first + ptSize, camDrawY + ptSize,
+            camScreenGrid.first - ptSize, camDrawY + ptSize
+        };
         square(1.0f, 0, 0, 1.0, 0.0, 0.0, 0, verts, nullptr, 1.0f);
 
+        // Текст теперь рисуется на исходной высоте
         draw_text(projs[p].label, offX, labelY, GLUT_BITMAP_HELVETICA_12, 1,1,1, 1);
     }
 }
