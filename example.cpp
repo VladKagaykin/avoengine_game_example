@@ -73,6 +73,9 @@ std::vector<Light*> dynamicLights;
 Portal* portals = nullptr;
 Portal* portals_2 = nullptr;
 
+std::vector<Light*> projectors = { &projector_1, &projector_2, &projector_3, &projector_4 };
+std::vector<pseudo_3d_entity*> entitys = {radio};
+
 void demo_scene();
 
 void refresh_map_list() {
@@ -237,7 +240,6 @@ void intro(const char* text){
         disappearing_text(text, 10.0f, float(window_h) - 74.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
         if (absolute_tick >= 64){ stage = 5; absolute_tick = 1; }
     }
-    
 }
 
 int choise = 1;
@@ -269,7 +271,6 @@ void settings(){
 float panorama_move = 0;
 
 void main_panorama(){
-    
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     if(absolute_tick%1==0){panorama_move+=turn_speed;}
     setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,panorama_move);
@@ -578,14 +579,8 @@ void draw_warp_minimap() {
     }
 }
 
-void demo_scene(){
-    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+void fixed_demo_scene(){
     bool plita=false;
-
-    flashlight.setPosition(camera.eye_x,camera.eye_y, camera.eye_z);
-    flashlight.dir[0] = camera.dir_x;
-    flashlight.dir[1] = camera.dir_y;
-    flashlight.dir[2] = camera.dir_z;
 
     projector_1.setPosition(-edge, height, edge);
     projector_1.setDirectionFromPitchYaw(-35, 135);
@@ -595,8 +590,6 @@ void demo_scene(){
     projector_3.setDirectionFromPitchYaw(-35, -45);
     projector_4.setPosition(-edge, height, -edge);
     projector_4.setDirectionFromPitchYaw(-35, 45);
-
-    useShader(defaultLightingShader);
 
     for(float i=-10;i<=10;i+=2){
         for(float j=-10;j<=10;j+=2){
@@ -609,12 +602,21 @@ void demo_scene(){
             }
         }
     }
-    // radio->setGAngle(radio->getGAngle()+turn_speed);
-    // radio->setVAngle(radio->getVAngle()+turn_speed);
-    // radio->setRAngle(radio->getRAngle()+turn_speed);
-    // radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
+}
+
+void demo_scene(){
+    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+    flashlight.setPosition(camera.eye_x,camera.eye_y, camera.eye_z);
+    flashlight.dir[0] = camera.dir_x;
+    flashlight.dir[1] = camera.dir_y;
+    flashlight.dir[2] = camera.dir_z;
+
+    radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
+
+    portals->draw();
+    portals_2->draw();
+
     draw_line_3d(0, -0.5,0,-10,0,-10,10,0,10,1,1,1,1,0.05,16);
-    // plane(-5,-0.5,5,0.5,0.5,0.5,nullptr,{0.5,0,0.5, 0.5,0,-0.5, -0.5,0,-0.5, -0.5,0,0.5});
 
     plane(0,0,0,0.7,0,0,nullptr,{-11,-1,-7, -11,-1,7, -11,1,7, -11,1,-7});
     plane(0,0,0,0.7,0,0,nullptr,{-9,-1,-7, -9,-1,7, -9,1,7, -9,1,-7});
@@ -624,15 +626,10 @@ void demo_scene(){
 
     plane(-10, 1, 0, 0.7, 0, 0,nullptr, {1,0,7, 1,0,-7, -1,0,-7, -1,0,7});
     plane(10, 1, 0, 0, 0.7, 0,nullptr, {1,0,3, 1,0,-3, -1,0,-3, -1,0,3});
-   
-    portals->draw();
-    portals_2->draw();
-}
 
+    // fixed_demo_scene();
+}
 void demo(){
-    if (portals) {
-        // portals->checkTeleport();
-    }
     if(camera.pitch!=pitch){pitch=camera.pitch;}
     if(camera.yaw!=yaw){yaw=camera.yaw;}
     move_camera(camera.eye_x, camera.eye_y, camera.eye_z, pitch, camera.yaw,roll);
@@ -653,7 +650,10 @@ void demo(){
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if(stage<5)intro("Welcome to avoengine_game_example");
-    if(stage==5){main_panorama();}
+    if(stage==5){
+        draw_performance_hud(window_w,window_h);
+        main_panorama();
+    }
     if(stage==6){
         demo();
         if (map_menu_active) draw_map_menu();
@@ -752,6 +752,7 @@ void update() {
             prev_mouse_x = mouse_x;
             prev_mouse_y = mouse_y;
             mouse_was_captured = true;
+
         }
         return;
     }
@@ -833,8 +834,10 @@ void update() {
                 prev_mouse_x = mouse_x;
                 prev_mouse_y = mouse_y;
                 mouse_was_captured = true;
-                // warp_ring();
+                warp_ring();
                 // warp_cylinder();
+                clean_scene();
+                fixed_scene(fixed_demo_scene);
             }
         }
     }
