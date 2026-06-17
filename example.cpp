@@ -1,8 +1,6 @@
 #include "avoengine_opengl/avoengine.h"
 #include "avoengine_opengl/avoextension.h"
-#include <GL/glu.h>
 #include <GLFW/glfw3.h>
-#include <GL/glut.h>
 #include <iostream>
 #include <vector>
 #include <filesystem>
@@ -171,17 +169,15 @@ void quick_save() {
     refresh_map_list();
 }
 
-void draw_map_menu() {
-    
-
+void draw_map_menu(){
     draw_text("~ Map Menu ~", 20.0f, float(window_h) - 30.0f,
-              GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 0.0f);
+              "avoengine_opengl/src/unifont.ttf", 18, 1.0f, 1.0f, 0.0f);
     draw_text("S: Save (quicksave.avomap)   Enter: Load   Esc: Close",
-              20.0f, 20.0f, GLUT_BITMAP_HELVETICA_18, 0.8f, 0.8f, 0.8f);
+              20.0f, 20.0f, "avoengine_opengl/src/unifont.ttf", 18, 0.8f, 0.8f, 0.8f);
 
     if (map_files.empty()) {
         draw_text("(no maps in maps/ folder)", 20.0f, float(window_h) - 60.0f,
-                  GLUT_BITMAP_HELVETICA_18, 0.7f, 0.7f, 0.7f);
+                  "avoengine_opengl/src/unifont.ttf", 18, 0.7f, 0.7f, 0.7f);
     } else {
         float y = float(window_h) - 60.0f;
         for (int i = 0; i < (int)map_files.size(); ++i) {
@@ -189,55 +185,56 @@ void draw_map_menu() {
             line += map_files[i];
             float r = (i == selected_map_index) ? 1.0f : 0.7f;
             float g = (i == selected_map_index) ? 1.0f : 0.7f;
-            draw_text(line.c_str(), 20.0f, y, GLUT_BITMAP_HELVETICA_18, r, g, 0.7f);
+            draw_text(line.c_str(), 20.0f, y,
+                      "avoengine_opengl/src/unifont.ttf", 18, r, g, 0.7f);
             y -= 20.0f;
         }
     }
-    
 }
 
 void intro(const char* text){
-    
     char buf[100];
+    const char* font = "avoengine_opengl/src/unifont.ttf";
+    int fontSize = 18;
     if (stage == 0) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
-        delay_text(buf, 10.0f, float(window_h) - 20.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
+        delay_text(buf, 10.0f, float(window_h) - 20.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
         if (absolute_tick >= 64) { absolute_tick = 1; stage = 1; }
     }
     if (stage == 1) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
-        draw_text(buf, 10.0f, float(window_h) - 20.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+        draw_text(buf, 10.0f, float(window_h) - 20.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
         snprintf(buf, sizeof(buf), "GPU: %s ", gpu_name.c_str());
-        delay_text(buf, 10.0f, float(window_h) - 38.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
+        delay_text(buf, 10.0f, float(window_h) - 38.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
         if (absolute_tick >= 64) { absolute_tick = 1; stage = 2; }
     }
     if (stage == 2) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
-        draw_text(buf, 10.0f, float(window_h) - 20.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+        draw_text(buf, 10.0f, float(window_h) - 20.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
         snprintf(buf, sizeof(buf), "GPU: %s ", gpu_name.c_str());
-        draw_text(buf, 10.0f, float(window_h) - 38.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+        draw_text(buf, 10.0f, float(window_h) - 38.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
         snprintf(buf, sizeof(buf), "RAM: %s ", ram_v.c_str());
-        delay_text(buf, 10.0f, float(window_h) - 56.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
+        delay_text(buf, 10.0f, float(window_h) - 56.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
         if (absolute_tick >= 64){ stage = 3; absolute_tick = 1; }
     }
     if (stage == 3) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
-        draw_text(buf, 10.0f, float(window_h) - 20.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+        draw_text(buf, 10.0f, float(window_h) - 20.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
         snprintf(buf, sizeof(buf), "GPU: %s ", gpu_name.c_str());
-        draw_text(buf, 10.0f, float(window_h) - 38.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+        draw_text(buf, 10.0f, float(window_h) - 38.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
         snprintf(buf, sizeof(buf), "RAM: %s ", ram_v.c_str());
-        draw_text(buf, 10.0f, float(window_h) - 56.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-        delay_text(text, 10.0f, float(window_h) - 74.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
+        draw_text(buf, 10.0f, float(window_h) - 56.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
+        delay_text(text, 10.0f, float(window_h) - 74.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f, 32, false);
         if (absolute_tick >= 64){ stage = 4; absolute_tick = 1; }
     }
     if (stage == 4) {
         snprintf(buf, sizeof(buf), "CPU: %s ", cpu_name.c_str());
-        disappearing_text(buf, 10.0f, float(window_h) - 20.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
+        disappearing_text(buf, 10.0f, float(window_h) - 20.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
         snprintf(buf, sizeof(buf), "GPU: %s ", gpu_name.c_str());
-        disappearing_text(buf, 10.0f, float(window_h) - 38.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
+        disappearing_text(buf, 10.0f, float(window_h) - 38.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
         snprintf(buf, sizeof(buf), "RAM: %s ", ram_v.c_str());
-        disappearing_text(buf, 10.0f, float(window_h) - 56.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
-        disappearing_text(text, 10.0f, float(window_h) - 74.0f, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
+        disappearing_text(buf, 10.0f, float(window_h) - 56.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
+        disappearing_text(text, 10.0f, float(window_h) - 74.0f, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f, 64, false);
         if (absolute_tick >= 64){ stage = 5; absolute_tick = 1; }
     }
 }
@@ -246,24 +243,26 @@ int choise = 1;
 int sound_choise = choise;
 
 void main_menu(){
-    if(!settings_mode) draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Play", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Settings", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Quit", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    
+    const char* font = "avoengine_opengl/src/unifont.ttf";
+    int fontSize = 18;
+    if(!settings_mode) draw_text(">", 9.0f, 18*(4-choise), font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Play", 18.0f, 18*3, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Settings", 18.0f, 18*2, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Quit", 18.0f, 18*1, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 void settings(){
-    
+    const char* font = "avoengine_opengl/src/unifont.ttf";
+    int fontSize = 18;
     char buf[100];
-    draw_text(">", 9.0f, 18*(4-choise), GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Fov", 18.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(">", 9.0f, 18*(4-choise), font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Fov", 18.0f, 18*3, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
     snprintf(buf, sizeof(buf), "%.2f", camera.fov);
-    draw_text(buf, 144.0f, 18*3, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Sensentivity", 18.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(buf, 144.0f, 18*3, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Sensentivity", 18.0f, 18*2, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
     snprintf(buf, sizeof(buf), "%.2f", turn_speed);
-    draw_text(buf, 144.0f, 18*2, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
-    draw_text("Quit settings", 18.0f, 18*1, GLUT_BITMAP_HELVETICA_18, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text(buf, 144.0f, 18*2, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
+    draw_text("Quit settings", 18.0f, 18*1, font, fontSize, 1.0f, 1.0f, 1.0f, 1.0f);
     
     setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,yaw);
 }
@@ -450,13 +449,11 @@ void draw_warp_minimap() {
     for (int p = 0; p < 3; ++p) {
         float offX = startX + p * (mapSize + gap);
 
-        // Сетка: для Front и Side поднимается, Top остаётся на месте
         float gridOffY = startY;
         if (p == 1 || p == 2) gridOffY += liftAmount;
 
-        // Камера и текст: всегда на уровне startY (как у Top)
-        float indicatorOffY = startY;  // для камеры и текста
-        float labelY = indicatorOffY + mapSize + 4.0f;  // подпись под панелью
+        float indicatorOffY = startY; 
+        float labelY = indicatorOffY + mapSize + 4.0f;
 
         int ax1 = projs[p].axis1;
         int ax2 = projs[p].axis2;
@@ -497,13 +494,11 @@ void draw_warp_minimap() {
         minY -= rangeY * 0.1f;
         maxY += rangeY * 0.1f;
 
-        // Экранные координаты для сетки
         auto toScreenGrid = [&](float wx, float wy) -> std::pair<float,float> {
             return { offX + (wx - minX) / (maxX - minX) * mapSize,
                      gridOffY + (wy - minY) / (maxY - minY) * mapSize };
         };
 
-        // Отрисовка сетки (использует gridOffY)
         if (p == 0) {
             const int gridTop = 10;
             for (int iv = 0; iv <= gridTop; ++iv) {
@@ -557,7 +552,6 @@ void draw_warp_minimap() {
             }
         }
 
-        // Позиция камеры
         glm::vec3 rel = camPos - origin;
         glm::mat3 invBasis = glm::inverse(glm::mat3(uAxis, vAxis, glm::cross(uAxis, vAxis)));
         glm::vec3 local = invBasis * rel;
@@ -571,10 +565,8 @@ void draw_warp_minimap() {
         }
         glm::vec2 camProjCorrected = projectPoint(camPosCorrected, ax1, ax2);
 
-        // Вычисляем экранные координаты камеры относительно **сетки** (чтобы позиция была верной)
         auto camScreenGrid = toScreenGrid(camProjCorrected.x, camProjCorrected.y);
 
-        // Для отрисовки камеры опускаем Y до indicatorOffY
         float camDrawY = camScreenGrid.second - (gridOffY - indicatorOffY);
 
         float ptSize = 4.0f;
@@ -586,8 +578,7 @@ void draw_warp_minimap() {
         };
         square(1.0f, 0, 0, 1.0, 0.0, 0.0, 0, verts, nullptr, 1.0f);
 
-        // Текст теперь рисуется на исходной высоте
-        draw_text(projs[p].label, offX, labelY, GLUT_BITMAP_HELVETICA_12, 1,1,1, 1);
+        draw_text(projs[p].label, offX, labelY, "avoengine_opengl/src/unifont.ttf",12, 1,1,1, 1);
     }
 }
 
@@ -648,7 +639,7 @@ void demo(){
 
     demo_scene();
 
-    draw_performance_hud(window_w,window_h);
+    draw_performance_hud(window_w,window_h, "avoengine_opengl/src/unifont.ttf");
     float size = 10.0f;
     float centerX = window_w / 2.0f;
     float centerY = window_h / 2.0f;
@@ -663,7 +654,7 @@ void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if(stage<5)intro("Welcome to avoengine_game_example");
     if(stage==5){
-        draw_performance_hud(window_w,window_h);
+        draw_performance_hud(window_w,window_h,"avoengine_opengl/src/unifont.ttf");
         main_panorama();
     }
     if(stage==6){
