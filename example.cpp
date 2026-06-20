@@ -606,8 +606,9 @@ void fixed_demo_scene(){
         }
     }
 }
-
+int last_tick= absolute_tick;
 void demo_scene(){
+    if(last_tick!=absolute_tick){warpRing.pitch += 1;last_tick= absolute_tick;}
     draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
     flashlight.setPosition(camera.eye_x,camera.eye_y, camera.eye_z);
     flashlight.dir[0] = camera.dir_x;
