@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <algorithm>
 #include "avoengine_opengl/src/miniaudio.h"
+#include "avoengine_opengl/portals_rc.h"
+#include "avoengine_opengl/pseudo3dentity.h"
 
 float pitch,yaw,roll;
 
@@ -91,82 +93,82 @@ void refresh_map_list() {
 }
 
 void apply_loaded_map(const MapData& map) {
-    stop_all_looping_sounds();
+    // stop_all_looping_sounds();
 
-    for (auto* e : allEntities) {
-        delete e;
-    }
-    allEntities.clear();
+    // for (auto* e : allEntities) {
+    //     delete e;
+    // }
+    // allEntities.clear();
 
-    projector_1.disable();
-    projector_2.disable();
-    projector_3.disable();
-    projector_4.disable();
-    flashlight.disable();
+    // projector_1.disable();
+    // projector_2.disable();
+    // projector_3.disable();
+    // projector_4.disable();
+    // flashlight.disable();
 
-    for (Light* l : dynamicLights) {
-        l->disable();
-        delete l;
-    }
-    dynamicLights.clear();
+    // for (Light* l : dynamicLights) {
+    //     l->disable();
+    //     delete l;
+    // }
+    // dynamicLights.clear();
 
-    if (portals) {
-        delete portals;
-        portals = nullptr;
-    }
-    auto portalsCopy = allPortals;
-    for (auto* p : portalsCopy) {
-        delete p; 
-    }
-    allPortals.clear();
+    // if (portals) {
+    //     delete portals;
+    //     portals = nullptr;
+    // }
+    // auto portalsCopy = allPortals;
+    // for (auto* p : portalsCopy) {
+    //     delete p; 
+    // }
+    // allPortals.clear();
 
-    for (const auto& ent : map.entities) {
-        pseudo_3d_entity* e = mapDataToEntity(ent);
-        registerEntity(e);
-    }
+    // for (const auto& ent : map.entities) {
+    //     pseudo_3d_entity* e = mapDataToEntity(ent);
+    //     registerEntity(e);
+    // }
 
-    for (const auto& ldata : map.lights) {
-        Light* newLight = new Light();
-        mapDataToLight(ldata, *newLight);
-        newLight->enable();
-        dynamicLights.push_back(newLight);
-    }
+    // for (const auto& ldata : map.lights) {
+    //     Light* newLight = new Light();
+    //     mapDataToLight(ldata, *newLight);
+    //     newLight->enable();
+    //     dynamicLights.push_back(newLight);
+    // }
 
-    for (const auto& portalData : map.portals) {
-        Portal* newPortal = mapDataToPortal(portalData);
-        if (!portals) {
-            portals = newPortal;
-        }
-    }
+    // for (const auto& portalData : map.portals) {
+    //     Portal* newPortal = mapDataToPortal(portalData);
+    //     if (!portals) {
+    //         portals = newPortal;
+    //     }
+    // }
 
-    if (map.fog_enabled) {
-        enable_fog(map.fog_density, map.fog_color[0], map.fog_color[1], map.fog_color[2],
-                   map.fog_start, map.fog_end);
-    } else {
-        disable_fog();
-    }
+    // if (map.fog_enabled) {
+    //     enable_fog(map.fog_density, map.fog_color[0], map.fog_color[1], map.fog_color[2],
+    //                map.fog_start, map.fog_end);
+    // } else {
+    //     disable_fog();
+    // }
 
-    camera.eye_x = map.camera_eye[0];
-    camera.eye_y = map.camera_eye[1];
-    camera.eye_z = map.camera_eye[2];
-    pitch = map.camera_pitch;
-    yaw = map.camera_yaw;
-    setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
+    // camera.eye_x = map.camera_eye[0];
+    // camera.eye_y = map.camera_eye[1];
+    // camera.eye_z = map.camera_eye[2];
+    // pitch = map.camera_pitch;
+    // yaw = map.camera_yaw;
+    // setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
 
-    if (!map.panorama_path.empty()) {
-        set_panorama(map.panorama_path.c_str());
-    } else {
-        remove_panorama();
-    }
+    // if (!map.panorama_path.empty()) {
+    //     set_panorama(map.panorama_path.c_str());
+    // } else {
+    //     remove_panorama();
+    // }
 
-    set_ambient_light(map.ambient[0], map.ambient[1], map.ambient[2]);
+    // set_ambient_light(map.ambient[0], map.ambient[1], map.ambient[2]);
 }
 
 void quick_save() {
-    if (!std::filesystem::exists("maps"))
-        std::filesystem::create_directory("maps");
-    save_current_scene("maps/quicksave.avomap");
-    refresh_map_list();
+    // if (!std::filesystem::exists("maps"))
+    //     std::filesystem::create_directory("maps");
+    // save_current_scene("maps/quicksave.avomap");
+    // refresh_map_list();
 }
 
 void draw_map_menu(){
@@ -727,21 +729,21 @@ void update() {
             menu_cooldown = 10;
         }
         if (skeys[GLFW_KEY_ENTER] && menu_cooldown <= 0) {
-            if (!map_files.empty()) {
-                std::string path = "maps/" + map_files[selected_map_index];
-                MapData map;
-                if (load_map(path.c_str(), map)) {
-                    apply_loaded_map(map);
-                    map_menu_active = false;
-                    toggle_cooldown = 20;
-                    set_mouse_capture(window, true);
-                    prev_mouse_x = mouse_x;
-                    prev_mouse_y = mouse_y;
-                    mouse_was_captured = true;
-                } else {
-                    std::cerr << "Failed to load map: " << path << std::endl;
-                }
-            }
+            // if (!map_files.empty()) {
+            //     std::string path = "maps/" + map_files[selected_map_index];
+            //     MapData map;
+            //     if (load_map(path.c_str(), map)) {
+            //         apply_loaded_map(map);
+            //         map_menu_active = false;
+            //         toggle_cooldown = 20;
+            //         set_mouse_capture(window, true);
+            //         prev_mouse_x = mouse_x;
+            //         prev_mouse_y = mouse_y;
+            //         mouse_was_captured = true;
+            //     } else {
+            //         std::cerr << "Failed to load map: " << path << std::endl;
+            //     }
+            // }
             menu_cooldown = 10;
         }
         if (keys[GLFW_KEY_S] && menu_cooldown <= 0) {
