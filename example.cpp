@@ -9,6 +9,7 @@
 #include "avoengine_opengl/portals_rc.h"
 #include "avoengine_opengl/pseudo3dentity.h"
 #include "avoengine_opengl/light.h"
+#include "avoengine_opengl/ambient.h"
 
 float pitch,yaw,roll;
 
