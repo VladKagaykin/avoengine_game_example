@@ -8,6 +8,7 @@
 #include "avoengine_opengl/src/miniaudio.h"
 #include "avoengine_opengl/portals_rc.h"
 #include "avoengine_opengl/pseudo3dentity.h"
+#include "avoengine_opengl/light.h"
 
 float pitch,yaw,roll;
 
@@ -909,7 +910,7 @@ void update() {
 }
 
 int main(int argc, char** argv){
-    glutInit(&argc, argv);
+    // glutInit(&argc, argv);
     setup_display(&argc, argv, 0.0f, 0.0f, 0.0f, 1.0f, "avoengine_example_game", 1280, 720);
     window = glfwGetCurrentContext();
 
