@@ -11,6 +11,7 @@
 #include "avoengine_opengl/light.h"
 #include "avoengine_opengl/ambient.h"
 #include "avoengine_opengl/audio_not_mini.h"
+#include "avoengine_opengl/2d_primitives.h"
 
 float pitch,yaw,roll;
 
