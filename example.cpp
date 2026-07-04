@@ -13,6 +13,7 @@
 #include "avoengine_opengl/audio_not_mini.h"
 #include "avoengine_opengl/2d_primitives.h"
 #include "avoengine_opengl/3d_primitives.h"
+#include "avoengine_opengl/shaders.h"
 
 float pitch,yaw,roll;
 
