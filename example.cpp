@@ -12,6 +12,7 @@
 #include "avoengine_opengl/ambient.h"
 #include "avoengine_opengl/audio_not_mini.h"
 #include "avoengine_opengl/2d_primitives.h"
+#include "avoengine_opengl/3d_primitives.h"
 
 float pitch,yaw,roll;
 
@@ -626,7 +627,7 @@ void demo_scene(){
     portals->draw();
     portals_2->draw();
 
-    draw_line_3d(0, -0.5,0, -10,0,-10, 10,0,10, 1,1,1, 1.0, 0.05, 16, 0.1);
+    draw_line_3d(0, -0.5,0, -10,0,-10, 10,0,10, 1,1,1,0.05, 16, 0.1);
 
     plane(0,0,0,0.7,0,0,nullptr,{-11,-1,-7, -11,-1,7, -11,1,7, -11,1,-7});
     plane(0,0,0,0.7,0,0,nullptr,{-9,-1,-7, -9,-1,7, -9,1,7, -9,1,-7});
