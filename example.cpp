@@ -743,7 +743,7 @@ int main(int argc, char** argv){
 
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/src/logo.png");
-    useShader(defaultLightingShader);
+    useShader(default_RC_Shader);
     set_ambient_light(0.05f, 0.05f, 0.05f);
     // set_ambient_light(0.7, 0.7, 0.7);
     flashlight.setRadius(20.0f);
@@ -797,11 +797,11 @@ int main(int argc, char** argv){
     init_mouse(window);
     stopShader();
     while (!glfwWindowShouldClose(window)){
-        useShader(defaultLightingShader);
+        useShader(default_RC_Shader);
         update_ticks();
         update();
         display();
-        flushDrawQueue();
+        flush_RC_DrawQueue();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
