@@ -15,6 +15,7 @@
 #include "avoengine_opengl/3d_primitives.h"
 #include "avoengine_opengl/shaders.h"
 #include "avoengine_opengl/warp.h"
+#include "avoengine_opengl/baking_scene.h"
 
 float pitch,yaw,roll;
 
