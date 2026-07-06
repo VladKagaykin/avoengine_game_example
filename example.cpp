@@ -1,5 +1,4 @@
 #include "avoengine_opengl/avoengine.h"
-#include "avoengine_opengl/avoextension.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <vector>
@@ -87,122 +86,6 @@ std::vector<Light*> projectors = { &projector_1, &projector_2, &projector_3, &pr
 std::vector<pseudo_3d_entity*> entitys = {radio};
 
 void demo_scene();
-
-void refresh_map_list() {
-    map_files.clear();
-    if (!std::filesystem::exists("maps")) {
-        std::filesystem::create_directory("maps");
-        return;
-    }
-    for (const auto& entry : std::filesystem::directory_iterator("maps")) {
-        if (entry.is_regular_file() && entry.path().extension() == ".avomap") {
-            map_files.push_back(entry.path().filename().string());
-        }
-    }
-    selected_map_index = (map_files.empty() ? 0 : std::min(selected_map_index, (int)map_files.size()-1));
-}
-
-void apply_loaded_map(const MapData& map) {
-    // stop_all_looping_sounds();
-
-    // for (auto* e : allEntities) {
-    //     delete e;
-    // }
-    // allEntities.clear();
-
-    // projector_1.disable();
-    // projector_2.disable();
-    // projector_3.disable();
-    // projector_4.disable();
-    // flashlight.disable();
-
-    // for (Light* l : dynamicLights) {
-    //     l->disable();
-    //     delete l;
-    // }
-    // dynamicLights.clear();
-
-    // if (portals) {
-    //     delete portals;
-    //     portals = nullptr;
-    // }
-    // auto portalsCopy = allPortals;
-    // for (auto* p : portalsCopy) {
-    //     delete p; 
-    // }
-    // allPortals.clear();
-
-    // for (const auto& ent : map.entities) {
-    //     pseudo_3d_entity* e = mapDataToEntity(ent);
-    //     registerEntity(e);
-    // }
-
-    // for (const auto& ldata : map.lights) {
-    //     Light* newLight = new Light();
-    //     mapDataToLight(ldata, *newLight);
-    //     newLight->enable();
-    //     dynamicLights.push_back(newLight);
-    // }
-
-    // for (const auto& portalData : map.portals) {
-    //     Portal* newPortal = mapDataToPortal(portalData);
-    //     if (!portals) {
-    //         portals = newPortal;
-    //     }
-    // }
-
-    // if (map.fog_enabled) {
-    //     enable_fog(map.fog_density, map.fog_color[0], map.fog_color[1], map.fog_color[2],
-    //                map.fog_start, map.fog_end);
-    // } else {
-    //     disable_fog();
-    // }
-
-    // camera.eye_x = map.camera_eye[0];
-    // camera.eye_y = map.camera_eye[1];
-    // camera.eye_z = map.camera_eye[2];
-    // pitch = map.camera_pitch;
-    // yaw = map.camera_yaw;
-    // setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
-
-    // if (!map.panorama_path.empty()) {
-    //     set_panorama(map.panorama_path.c_str());
-    // } else {
-    //     remove_panorama();
-    // }
-
-    // set_ambient_light(map.ambient[0], map.ambient[1], map.ambient[2]);
-}
-
-void quick_save() {
-    // if (!std::filesystem::exists("maps"))
-    //     std::filesystem::create_directory("maps");
-    // save_current_scene("maps/quicksave.avomap");
-    // refresh_map_list();
-}
-
-void draw_map_menu(){
-    draw_text("~ Map Menu ~", 20.0f, float(window_h) - 30.0f,
-              "avoengine_opengl/src/unifont.ttf", 18, 1.0f, 1.0f, 0.0f);
-    draw_text("S: Save (quicksave.avomap)   Enter: Load   Esc: Close",
-              20.0f, 20.0f, "avoengine_opengl/src/unifont.ttf", 18, 0.8f, 0.8f, 0.8f);
-
-    if (map_files.empty()) {
-        draw_text("(no maps in maps/ folder)", 20.0f, float(window_h) - 60.0f,
-                  "avoengine_opengl/src/unifont.ttf", 18, 0.7f, 0.7f, 0.7f);
-    } else {
-        float y = float(window_h) - 60.0f;
-        for (int i = 0; i < (int)map_files.size(); ++i) {
-            std::string line = (i == selected_map_index) ? "> " : "  ";
-            line += map_files[i];
-            float r = (i == selected_map_index) ? 1.0f : 0.7f;
-            float g = (i == selected_map_index) ? 1.0f : 0.7f;
-            draw_text(line.c_str(), 20.0f, y,
-                      "avoengine_opengl/src/unifont.ttf", 18, r, g, 0.7f);
-            y -= 20.0f;
-        }
-    }
-}
 
 void intro(const char* text){
     char buf[100];
@@ -672,7 +555,6 @@ void display(){
     }
     if(stage==6){
         demo();
-        if (map_menu_active) draw_map_menu();
     }
     if(settings_mode){
         settings();
@@ -705,72 +587,6 @@ void update() {
         const float sensitivity = 0.1f;
         camera.yaw   -= dx * sensitivity;
         camera.pitch -= dy * sensitivity;
-    }
-
-    if (stage == 6 && keys[GLFW_KEY_M] && toggle_cooldown <= 0) {
-        map_menu_active = !map_menu_active;
-        toggle_cooldown = 20;
-        if (map_menu_active) {
-            if (mouse_was_captured) {
-                set_mouse_capture(window, false);
-                mouse_was_captured = false;
-            }
-            refresh_map_list();
-            selected_map_index = 0;
-        } else {
-            if (!settings_mode) {
-                set_mouse_capture(window, true);
-                prev_mouse_x = mouse_x;
-                prev_mouse_y = mouse_y;
-                mouse_was_captured = true;
-            }
-        }
-    }
-
-    if (map_menu_active) {
-        if (skeys[GLFW_KEY_UP] && menu_cooldown <= 0) {
-            if (!map_files.empty())
-                selected_map_index = (selected_map_index - 1 + map_files.size()) % map_files.size();
-            menu_cooldown = 10;
-        }
-        if (skeys[GLFW_KEY_DOWN] && menu_cooldown <= 0) {
-            if (!map_files.empty())
-                selected_map_index = (selected_map_index + 1) % map_files.size();
-            menu_cooldown = 10;
-        }
-        if (skeys[GLFW_KEY_ENTER] && menu_cooldown <= 0) {
-            // if (!map_files.empty()) {
-            //     std::string path = "maps/" + map_files[selected_map_index];
-            //     MapData map;
-            //     if (load_map(path.c_str(), map)) {
-            //         apply_loaded_map(map);
-            //         map_menu_active = false;
-            //         toggle_cooldown = 20;
-            //         set_mouse_capture(window, true);
-            //         prev_mouse_x = mouse_x;
-            //         prev_mouse_y = mouse_y;
-            //         mouse_was_captured = true;
-            //     } else {
-            //         std::cerr << "Failed to load map: " << path << std::endl;
-            //     }
-            // }
-            menu_cooldown = 10;
-        }
-        if (keys[GLFW_KEY_S] && menu_cooldown <= 0) {
-            quick_save();
-            menu_cooldown = 10;
-        }
-        if (skeys[GLFW_KEY_ESCAPE] && menu_cooldown <= 0) {
-            map_menu_active = false;
-            menu_cooldown = 10;
-            toggle_cooldown = 20;
-            set_mouse_capture(window, true);
-            prev_mouse_x = mouse_x;
-            prev_mouse_y = mouse_y;
-            mouse_was_captured = true;
-
-        }
-        return;
     }
 
     if (sound_choise != choise && last_footstep != absolute_tick) {
