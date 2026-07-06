@@ -17,6 +17,7 @@
 #include "avoengine_opengl/warp.h"
 #include "avoengine_opengl/baking_scene.h"
 #include "avoengine_opengl/ray_casting.h"
+#include "avoengine_opengl/tick_system.h"
 
 float pitch,yaw,roll;
 
