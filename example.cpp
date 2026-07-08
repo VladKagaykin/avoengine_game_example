@@ -165,7 +165,7 @@ void settings(){
 float panorama_move = 0;
 
 void main_panorama(){
-    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+    draw_panorama();
     if(absolute_tick%1==0){panorama_move+=turn_speed;}
     setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,panorama_move);
     camera.yaw=panorama_move;
@@ -504,7 +504,7 @@ void fixed_demo_scene(){
 int last_tick= absolute_tick;
 void demo_scene(){
     if(last_tick!=absolute_tick){warpRing.pitch += 1;last_tick= absolute_tick;}
-    draw_panorama(camera.eye_x,camera.eye_y,camera.eye_z);
+    draw_panorama();
     flashlight.setPosition(camera.eye_x,camera.eye_y, camera.eye_z);
     flashlight.dir[0] = camera.dir_x;
     flashlight.dir[1] = camera.dir_y;
@@ -733,6 +733,52 @@ void update() {
         }
     }
 }
+void createSphere(float radius, float cx, float cy, float cz, double r, double g, double b, float alpha) {
+    int stacks = 24, slices = 36;
+    std::vector<float> vertices, normals, texcoords;
+    std::vector<int> indices;
+
+    for (int i = 0; i <= stacks; ++i) {
+        float theta = i * M_PI / stacks;
+        float sinTheta = sin(theta);
+        float cosTheta = cos(theta);
+        for (int j = 0; j <= slices; ++j) {
+            float phi = j * 2.0f * M_PI / slices;
+            float sinPhi = sin(phi);
+            float cosPhi = cos(phi);
+            float x = radius * sinTheta * cosPhi;
+            float y = radius * cosTheta;
+            float z = radius * sinTheta * sinPhi;
+            vertices.push_back(x);
+            vertices.push_back(y);
+            vertices.push_back(z);
+            normals.push_back(sinTheta * cosPhi);
+            normals.push_back(cosTheta);
+            normals.push_back(sinTheta * sinPhi);
+            texcoords.push_back((float)j / slices);
+            texcoords.push_back((float)i / stacks);
+        }
+    }
+
+    for (int i = 0; i < stacks; ++i) {
+        for (int j = 0; j < slices; ++j) {
+            int a = i * (slices + 1) + j;
+            int b = a + slices + 1;
+            indices.push_back(a);
+            indices.push_back(b);
+            indices.push_back(a + 1);
+            indices.push_back(b);
+            indices.push_back(b + 1);
+            indices.push_back(a + 1);
+        }
+    }
+
+    draw3DObject(cx, cy, cz, r, g, b, "src/stargazer.png", vertices, indices, texcoords, normals, 0.0f, 0.0f, 0.0f, alpha);
+}
+
+void panorama_uzhas(){
+    createSphere(20.0f, 0.0f, 0.0f, 0.0f, 1.0, 1.0, 1.0, 1.0f);
+}
 
 int main(int argc, char** argv){
     // glutInit(&argc, argv);
@@ -790,8 +836,8 @@ int main(int argc, char** argv){
                      0.0f, 0.0f, 0.0f);
 
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
-    set_panorama("src/stargazer.png");
-    enable_fog(0.05, 0.1, 0.1, 0.7, 5, 15);
+    set_panorama(panorama_uzhas);
+    enable_fog(0.05, 0.1, 0.1, 0.7, 5, 50);
     init_tick_system();
     init_keyboard(window);
     init_mouse(window);
