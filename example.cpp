@@ -837,7 +837,7 @@ int main(int argc, char** argv){
 
     setup_camera(camera.fov, camera.eye_x, camera.eye_y, camera.eye_z, pitch, yaw);
     set_panorama(panorama_uzhas);
-    enable_fog(0.05, 0.1, 0.1, 0.7, 5, 50);
+    enable_fog(0.01, 0.1, 0.1, 0.7, 5, 50);
     init_tick_system();
     init_keyboard(window);
     init_mouse(window);
