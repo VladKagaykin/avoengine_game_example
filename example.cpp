@@ -165,7 +165,7 @@ void settings(){
 float panorama_move = 0;
 
 void main_panorama(){
-    draw_panorama();
+    // draw_panorama();
     if(absolute_tick%1==0){panorama_move+=turn_speed;}
     setup_camera(camera.fov,camera.eye_x,camera.eye_y,camera.eye_z,pitch,panorama_move);
     camera.yaw=panorama_move;
@@ -504,27 +504,27 @@ void fixed_demo_scene(){
 int last_tick= absolute_tick;
 void demo_scene(){
     if(last_tick!=absolute_tick){warpRing.pitch += 1;last_tick= absolute_tick;}
-    draw_panorama();
-    flashlight.setPosition(camera.eye_x,camera.eye_y, camera.eye_z);
-    flashlight.dir[0] = camera.dir_x;
-    flashlight.dir[1] = camera.dir_y;
-    flashlight.dir[2] = camera.dir_z;
+    // draw_panorama();
+    // flashlight.setPosition(camera.eye_x,camera.eye_y, camera.eye_z);
+    // flashlight.dir[0] = camera.dir_x;
+    // flashlight.dir[1] = camera.dir_y;
+    // flashlight.dir[2] = camera.dir_z;
 
-    radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
+    // radio->draw(camera.eye_x, camera.eye_y, camera.eye_z);
 
-    portals->draw();
-    portals_2->draw();
+    // portals->draw();
+    // portals_2->draw();
 
-    draw_line_3d(0, -0.5,0, -10,0,-10, 10,0,10, 1,1,1,0.05, 16, 0.1);
+    // draw_line_3d(0, -0.5,0, -10,0,-10, 10,0,10, 1,1,1,0.05, 16, 0.1);
 
-    plane(0,0,0,0.7,0,0,nullptr,{-11,-1,-7, -11,-1,7, -11,1,7, -11,1,-7});
-    plane(0,0,0,0.7,0,0,nullptr,{-9,-1,-7, -9,-1,7, -9,1,7, -9,1,-7});
+    // plane(0,0,0,0.7,0,0,nullptr,{-11,-1,-7, -11,-1,7, -11,1,7, -11,1,-7});
+    // plane(0,0,0,0.7,0,0,nullptr,{-9,-1,-7, -9,-1,7, -9,1,7, -9,1,-7});
 
-    plane(0,0,0,0,0.7,0,nullptr,{11,-1,-3, 11,-1,3, 11,1,3, 11,1,-3});
-    plane(0,0,0,0,0.7,0,nullptr,{9,-1,-3, 9,-1,3, 9,1,3, 9,1,-3});
+    // plane(0,0,0,0,0.7,0,nullptr,{11,-1,-3, 11,-1,3, 11,1,3, 11,1,-3});
+    // plane(0,0,0,0,0.7,0,nullptr,{9,-1,-3, 9,-1,3, 9,1,3, 9,1,-3});
 
-    plane(-10, 1, 0, 0.7, 0, 0,nullptr, {1,0,7, 1,0,-7, -1,0,-7, -1,0,7});
-    plane(10, 1, 0, 0, 0.7, 0,nullptr, {1,0,3, 1,0,-3, -1,0,-3, -1,0,3});
+    // plane(-10, 1, 0, 0.7, 0, 0,nullptr, {1,0,7, 1,0,-7, -1,0,-7, -1,0,7});
+    // plane(10, 1, 0, 0, 0.7, 0,nullptr, {1,0,3, 1,0,-3, -1,0,-3, -1,0,3});
 
     // fixed_demo_scene();
 }
@@ -790,8 +790,8 @@ int main(int argc, char** argv){
     glEnable(GL_NORMALIZE);
     set_icon("avoengine_opengl/src/logo.png");
     useShader(default_RC_Shader);
-    set_ambient_light(0.05f, 0.05f, 0.05f);
-    // set_ambient_light(0.7, 0.7, 0.7);
+    // set_ambient_light(0.05f, 0.05f, 0.05f);
+    set_ambient_light(0.7, 0.7, 0.7);
     flashlight.setRadius(20.0f);
     flashlight.setColor(1.0f, 0.95f, 0.8f);
     flashlight.setIntensity(3);
