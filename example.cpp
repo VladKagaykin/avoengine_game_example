@@ -503,7 +503,7 @@ void fixed_demo_scene(){
 }
 int last_tick= absolute_tick;
 void demo_scene(){
-    if(last_tick!=absolute_tick){warpRing.pitch += 1;last_tick= absolute_tick;}
+    // if(last_tick!=absolute_tick){warpRing.pitch += 1;last_tick= absolute_tick;}
     // draw_panorama();
     // flashlight.setPosition(camera.eye_x,camera.eye_y, camera.eye_z);
     // flashlight.dir[0] = camera.dir_x;
@@ -666,7 +666,7 @@ void update() {
                 prev_mouse_x = mouse_x;
                 prev_mouse_y = mouse_y;
                 mouse_was_captured = true;
-                warp_ring();
+                // warp_ring();
                 // warp_cylinder();
                 clean_scene();
                 fixed_scene(fixed_demo_scene);
@@ -731,6 +731,9 @@ void update() {
                 last_footstep = absolute_tick;
             }
         }
+    }
+    if(keys[GLFW_KEY_R]){
+        Engine_settings.DEBUG_GRAPHICS= (!Engine_settings.DEBUG_GRAPHICS);
     }
 }
 void createSphere(float radius, float cx, float cy, float cz, double r, double g, double b, float alpha) {
