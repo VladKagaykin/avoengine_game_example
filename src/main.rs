@@ -1,4 +1,6 @@
 use avoengine::*;
+use std::time::{Duration, Instant};
+use std::f64::consts::PI;
 
 fn main() {
     let settings = Engine_settings.lock().unwrap();
@@ -18,6 +20,67 @@ fn main() {
 
     avoengine::console_rc_render::Render_image_to_console();
     avoengine::console_rc_render::To_console();
+
+    let mut angle: f64 = 0.0;
+    let mut hue: f64 = 0.0;
+    let size: f64 = 10.0;
+    let width = Engine_settings.lock().unwrap().window_width as f64;
+    let height = Engine_settings.lock().unwrap().window_height as f64;
+    let center_x = width / 2.0;
+    let center_y = height / 2.0;
+    let frame_duration = Duration::from_millis(50);
+
+    loop {
+        let frame_start = Instant::now();
+        
+        let cos_a = angle.cos();
+        let sin_a = angle.sin();
+        
+        let vertices: Vec<f64> = vec![
+            size * cos_a - size * sin_a,  size * sin_a + size * cos_a,
+            -size * cos_a - size * sin_a, -size * sin_a + size * cos_a,
+            -size * cos_a + size * sin_a, -size * sin_a - size * cos_a,
+            size * cos_a + size * sin_a,  size * sin_a - size * cos_a,
+        ];
+        
+        let r = (hue * 6.0).cos() * 0.5 + 0.5;
+        let g = ((hue * 6.0) - 2.0).cos() * 0.5 + 0.5;
+        let b = ((hue * 6.0) - 4.0).cos() * 0.5 + 0.5;
+        
+        let rgb = [
+            (r * 255.0) as u8,
+            (g * 255.0) as u8,
+            (b * 255.0) as u8,
+            255
+        ];
+        
+        let square = Draw_components {
+            draw_type: "2d_object".to_string(),
+            draw_x: center_x,
+            draw_y: center_y,
+            draw_z: 0.0,
+            draw_symbol: '#',
+            draw_vertices: vertices,
+            draw_RGBA_color: rgb,
+        };
+        
+        {
+            let mut queue = Draw_queue.lock().unwrap();
+            queue.clear();
+            queue.push(square);
+        }
+        
+        let _ = avoengine::console_rc_render::Render_image_to_console();
+        avoengine::console_rc_render::To_console();
+        
+        angle += 0.05;
+        hue += 0.005; 
+        
+        let elapsed = frame_start.elapsed();
+        if elapsed < frame_duration {
+            std::thread::sleep(frame_duration - elapsed);
+        }
+    }
 
     println!("Hello, world!");
 }
