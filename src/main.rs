@@ -14,15 +14,30 @@ fn main() {
                                      draw_symbol: '#', 
                                      draw_vertices: vec![1.0,1.0,1.0,-1.0,-1.0,-1.0,-1.0,1.0],
                                      draw_RGBA_color: [255,255,255,255]};
+    let cube_vertices = vec![
+        1.0,  1.0,  1.0,  1.0, -1.0,  1.0, -1.0, -1.0,  1.0,
+        1.0,  1.0,  1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0,
+        1.0,  1.0, -1.0, -1.0,  1.0, -1.0, -1.0, -1.0, -1.0,
+        1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0, -1.0, -1.0,
+        -1.0,  1.0,  1.0, -1.0, -1.0,  1.0, -1.0, -1.0, -1.0,
+        -1.0,  1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0, -1.0,
+        1.0,  1.0, -1.0,  1.0, -1.0, -1.0,  1.0, -1.0,  1.0,
+        1.0,  1.0, -1.0,  1.0, -1.0,  1.0,  1.0,  1.0,  1.0,
+        1.0,  1.0,  1.0,  1.0,  1.0, -1.0, -1.0,  1.0, -1.0,
+        1.0,  1.0,  1.0, -1.0,  1.0, -1.0, -1.0,  1.0,  1.0,
+        1.0, -1.0,  1.0, -1.0, -1.0,  1.0, -1.0, -1.0, -1.0,
+        1.0, -1.0,  1.0, -1.0, -1.0, -1.0,  1.0, -1.0, -1.0,
+    ];
     // Draw_queue.lock().unwrap().push(square);
     drop(settings);
     Engine_setup();
+    let mut direction_up= true;
     loop{
         let mut plita = false;
         for x in (-10..10).step_by(2) {
             for z in (-10..10).step_by(2) {
-                plita = !plita;
-                let color = if plita { [255, 255, 255, 255] } else { [3, 78, 37, 255] };
+                plita = ((x / 2) + (z / 2)) % 2 == 0;
+                let color = if plita { [58, 58, 58, 255] } else { [3, 78, 37, 255] };
                 let vertices = vec![
                     1.0, 0.0, 1.0,  1.0, 0.0, -1.0,  -1.0, 0.0, -1.0,  
                     1.0, 0.0, 1.0,  -1.0, 0.0, -1.0,  -1.0, 0.0, 1.0   
@@ -32,16 +47,35 @@ fn main() {
                     draw_x: x as f32,
                     draw_y: 0.0,
                     draw_z: z as f32,
-                    draw_symbol: '#',
+                    draw_symbol: '█',
                     draw_vertices: vertices,
                     draw_RGBA_color: color,
                 });
             }
         }
+        Draw_queue.lock().unwrap().push(Draw_components {
+            draw_type: "3d_object".to_string(),
+            draw_x: 7.0,
+            draw_y: 1.0,
+            draw_z: 7.0,
+            draw_symbol: '#',
+            draw_vertices: cube_vertices.clone(),
+            draw_RGBA_color: [255, 0, 0, 255],
+        });
+        Draw_queue.lock().unwrap().push(Draw_components {
+            draw_type: "3d_object".to_string(),
+            draw_x: -9.0,
+            draw_y: 1.0,
+            draw_z: -9.0,
+            draw_symbol: '#',
+            draw_vertices: cube_vertices.clone(),
+            draw_RGBA_color: [0, 0, 255, 255],
+        });
         {
             let mut camera = Camera.lock().unwrap();
-            camera.camera_pitch = 90.0;
-            camera.camera_y = 40.0;
+            camera.camera_pitch = 225.0;
+            camera.camera_y = 5.8;
+            // camera.camera_yaw += 1.0;
             camera.camera_yaw += 1.0;
             // camera.camera_z = -30.0;
         }
