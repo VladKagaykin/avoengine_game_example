@@ -13,7 +13,7 @@ fn main() {
                                      draw_z: 0.0, 
                                      draw_symbol: '#', 
                                      draw_vertices: vec![1.0,1.0,1.0,-1.0,-1.0,-1.0,-1.0,1.0],
-                                     draw_RGBA_color: [255,255,255,255]};
+                                     draw_RGBA_color: [255,255,255,25]};
     let cube_vertices = vec![
         1.0,  1.0,  1.0,  1.0, -1.0,  1.0, -1.0, -1.0,  1.0,
         1.0,  1.0,  1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0,
@@ -28,7 +28,7 @@ fn main() {
         1.0, -1.0,  1.0, -1.0, -1.0,  1.0, -1.0, -1.0, -1.0,
         1.0, -1.0,  1.0, -1.0, -1.0, -1.0,  1.0, -1.0, -1.0,
     ];
-    // Draw_queue.lock().unwrap().push(square);
+    Draw_queue.lock().unwrap().push(square);
     drop(settings);
     Engine_setup();
     let mut direction_up= true;
