@@ -31,6 +31,7 @@ fn main() {
     Draw_queue.lock().unwrap().push(square);
     drop(settings);
     Engine_setup();
+    avoengine::tick_system::Init_tick_system();
     let mut direction_up= true;
     let mut plita = false;
     for x in (-10..10).step_by(2) {
@@ -79,7 +80,24 @@ fn main() {
         draw_vertices: cube_vertices.clone(),
         draw_RGBA_color: [255, 255, 255, 25],
     });
+    
+    let mut last_fps_tick = 0;
+    let mut frame_count = 0;
+    let mut last_frame_count = 0;
+    
     loop{
+
+        avoengine::tick_system::Tick_update();
+
+        let current_tick = avoengine::tick_system::Get_tick();
+        frame_count += 1;
+
+        if current_tick - last_fps_tick >= 20 {
+            last_frame_count = frame_count.clone();
+            frame_count = 0;
+            last_fps_tick = current_tick;
+        }
+
         {
             let mut camera = Camera.lock().unwrap();
             camera.camera_pitch = 225.0;
@@ -93,6 +111,8 @@ fn main() {
 
         avoengine::console_rc_render::Render_image_to_console();
         avoengine::console_rc_render::To_console();
+
+        println!("FPS: {}", last_frame_count);
     }
     // let mut angle: f64 = 0.0;
     // let mut hue: f64 = 0.0;
