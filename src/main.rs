@@ -1,8 +1,11 @@
 use avoengine::*;
 use std::time::{Duration, Instant};
 use std::f64::consts::PI;
+use winit::event::{Event, WindowEvent};
+use winit::event_loop::ControlFlow;
 
 fn main() {
+    let (window, event_loop) = window_processing::create_window("avoengine".to_string());
     let settings = Engine_settings.lock().unwrap();
     Setup_window(&settings.window_width, &settings.window_height);
     let mut square = Draw_components{draw_type: "2d_object".to_string(), 
@@ -84,36 +87,83 @@ fn main() {
     let mut last_fps_tick = 0;
     let mut frame_count = 0;
     let mut last_frame_count = 0;
+    let mut camera_speed:f32 = 0.1;
+    let mut camera_angle_speed: f32 = 5.8; 
     
-    loop{
+        event_loop.run(move |event, target| {
+        target.set_control_flow(ControlFlow::Poll);
+        
+        match event {
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => {
+                std::process::exit(0);
+            }
+            Event::AboutToWait => {
+                avoengine::tick_system::Tick_update();
 
-        avoengine::tick_system::Tick_update();
+                let keys = avoengine::console_input::get_pressed_keys();
 
-        let current_tick = avoengine::tick_system::Get_tick();
-        frame_count += 1;
+                let current_tick = avoengine::tick_system::Get_tick();
+                frame_count += 1;
 
-        if current_tick - last_fps_tick >= 20 {
-            last_frame_count = frame_count.clone();
-            frame_count = 0;
-            last_fps_tick = current_tick;
+                if current_tick - last_fps_tick >= 20 {
+                    last_frame_count = frame_count.clone();
+                    frame_count = 0;
+                    last_fps_tick = current_tick;
+                }
+
+                {
+                    let mut camera = Camera.lock().unwrap();
+                    match keys.as_slice() {
+                        [i, ..] if *i == 'i' => camera.camera_pitch += camera_angle_speed,
+                        [k, ..] if *k == 'k' => camera.camera_pitch -= camera_angle_speed,
+                        [j, ..] if *j == 'j' => camera.camera_yaw += camera_angle_speed,
+                        [l, ..] if *l == 'l' => camera.camera_yaw -= camera_angle_speed,
+                        [w, ..] if *w == 'w' => {
+                            let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
+                            camera.camera_x += basis.forward[0] * camera_speed;
+                            camera.camera_y += basis.forward[1] * camera_speed;
+                            camera.camera_z += basis.forward[2] * camera_speed;
+                        },
+                        [s, ..] if *s == 's' => {
+                            let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
+                            camera.camera_x -= basis.forward[0] * camera_speed;
+                            camera.camera_y -= basis.forward[1] * camera_speed;
+                            camera.camera_z -= basis.forward[2] * camera_speed;
+                        },
+                        [a, ..] if *a == 'a' => {
+                            let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
+                            camera.camera_x -= basis.right[0] * camera_speed;
+                            camera.camera_y -= basis.right[1] * camera_speed;
+                            camera.camera_z -= basis.right[2] * camera_speed;
+                        },
+                        [d, ..] if *d == 'd' => {
+                            let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
+                            camera.camera_x += basis.right[0] * camera_speed;
+                            camera.camera_y += basis.right[1] * camera_speed;
+                            camera.camera_z += basis.right[2] * camera_speed;
+                        },
+                        [q, ..] if *q == 'q' => std::process::exit(0),
+                        _ => {}
+                    }
+                }
+
+                avoengine::console_rc_render::Render_image_to_console();
+                avoengine::console_rc_render::To_console();
+                
+                let _ = window_processing::update_frame(&window);
+
+                println!("[Q]Exit;    Camera angle: [I]Up;[J]Left;[K]Down;[L]Right;;    Camera Position: [W]Forward;[A]Left;[S]Backward;[D]Right;");
+
+                println!("{:?}", keys);
+
+                println!("FPS: {}", last_frame_count);
+            }
+            _ => {}
         }
-
-        {
-            let mut camera = Camera.lock().unwrap();
-            camera.camera_pitch = 225.0;
-            camera.camera_y = 5.8;
-            // camera.camera_x = -10.0;
-            // camera.camera_z = 10.0;
-            // camera.camera_yaw += 1.0;
-            camera.camera_yaw += 5.0;
-            // camera.camera_z = -30.0;
-        }
-
-        avoengine::console_rc_render::Render_image_to_console();
-        avoengine::console_rc_render::To_console();
-
-        println!("FPS: {}", last_frame_count);
-    }
+    });
     // let mut angle: f64 = 0.0;
     // let mut hue: f64 = 0.0;
     // let size: f64 = 10.0;

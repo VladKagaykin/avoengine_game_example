@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 avoengine = { path = "./avoengine_rust" }
+winit = "0.30.13"
+softbuffer = "0.4.8"
