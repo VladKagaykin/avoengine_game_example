@@ -1,0 +1,1 @@
+calloop::sources::Dispatcher<'static, calloop_wayland_source::WaylandSource<winit::platform_impl::linux::wayland::state::WinitState>, winit::platform_impl::linux::wayland::state::WinitState>
