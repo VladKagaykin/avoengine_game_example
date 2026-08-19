@@ -1,6 +1,6 @@
 use avoengine::*;
 use std::time::{Duration, Instant};
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::ControlFlow;
 use winit::keyboard::KeyCode;
@@ -14,12 +14,12 @@ fn main() {
     let mut square = Draw_components{draw_type: "2d_object".to_string(), 
                                      draw_x: settings.window_width as f32 /2.0 , 
                                      draw_y: settings.window_height as f32 /2.0 ,
-                                    // draw_x: 20.0 , 
-                                    //  draw_y: 20.0 ,
                                      draw_z: 0.0, 
                                      draw_symbol: '#', 
                                      draw_vertices: vec![1.0,1.0,1.0,-1.0,-1.0,-1.0,-1.0,1.0],
-                                     draw_RGBA_color: [255,255,255,25]};
+                                     draw_RGBA_color: [255,255,255,25],
+                                     draw_texture_path: "none".to_string(),
+                                     draw_special_name: "none".to_string()};
     let cube_vertices = vec![
         1.0,  1.0,  1.0,  1.0, -1.0,  1.0, -1.0, -1.0,  1.0,
         1.0,  1.0,  1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0,
@@ -34,7 +34,7 @@ fn main() {
         1.0, -1.0,  1.0, -1.0, -1.0,  1.0, -1.0, -1.0, -1.0,
         1.0, -1.0,  1.0, -1.0, -1.0, -1.0,  1.0, -1.0, -1.0,
     ];
-    Draw_queue.lock().unwrap().push(square);
+    Static_scene.lock().unwrap().push(square);
     drop(settings);
     Engine_setup();
     avoengine::tick_system::Init_tick_system();
@@ -48,7 +48,7 @@ fn main() {
                 1.0, 0.0, 1.0,  1.0, 0.0, -1.0,  -1.0, 0.0, -1.0,  
                 1.0, 0.0, 1.0,  -1.0, 0.0, -1.0,  -1.0, 0.0, 1.0   
             ];
-            Draw_queue.lock().unwrap().push(Draw_components {
+            Static_scene.lock().unwrap().push(Draw_components {
                 draw_type: "3d_object".to_string(),
                 draw_x: x as f32,
                 draw_y: 0.0,
@@ -56,10 +56,12 @@ fn main() {
                 draw_symbol: '█',
                 draw_vertices: vertices,
                 draw_RGBA_color: color,
+                draw_texture_path: "none".to_string(),
+                draw_special_name: "none".to_string()
             });
         }
     }
-    Draw_queue.lock().unwrap().push(Draw_components {
+    Static_scene.lock().unwrap().push(Draw_components {
         draw_type: "3d_object".to_string(),
         draw_x: 7.0,
         draw_y: 1.0,
@@ -67,8 +69,10 @@ fn main() {
         draw_symbol: '#',
         draw_vertices: cube_vertices.clone(),
         draw_RGBA_color: [255, 0, 0, 255],
+        draw_texture_path: "none".to_string(),
+        draw_special_name: "none".to_string()
     });
-    Draw_queue.lock().unwrap().push(Draw_components {
+    Static_scene.lock().unwrap().push(Draw_components {
         draw_type: "3d_object".to_string(),
         draw_x: -9.0,
         draw_y: 1.0,
@@ -76,8 +80,10 @@ fn main() {
         draw_symbol: '#',
         draw_vertices: cube_vertices.clone(),
         draw_RGBA_color: [0, 0, 255, 255],
+        draw_texture_path: "none".to_string(),
+        draw_special_name: "none".to_string()
     });
-    Draw_queue.lock().unwrap().push(Draw_components {
+    Static_scene.lock().unwrap().push(Draw_components {
         draw_type: "3d_object".to_string(),
         draw_x: -5.0,
         draw_y: 1.0,
@@ -85,12 +91,14 @@ fn main() {
         draw_symbol: '#',
         draw_vertices: cube_vertices.clone(),
         draw_RGBA_color: [255, 255, 255, 25],
+        draw_texture_path: "none".to_string(),
+        draw_special_name: "none".to_string()
     });
     
     let mut last_fps_tick = 0;
     let mut frame_count = 0;
     let mut last_frame_count = 0;
-    let mut camera_speed:f32 = 0.1;
+    let mut camera_speed:f32 = 0.58;
     let mut camera_angle_speed: f32 = 5.8; 
     
     event_loop.run(move |event, target| {
@@ -123,6 +131,28 @@ fn main() {
         }
         Event::AboutToWait => {
             avoengine::tick_system::Tick_update();
+
+            let angle = (avoengine::tick_system::Get_tick() as f32 * 0.02) % (2.0 * PI);
+            let (sin_a, cos_a) = (angle.sin(), angle.cos());
+            
+            let mut rotated = cube_vertices.clone();
+            for i in (0..rotated.len()).step_by(3) {
+                let (x, z) = (rotated[i], rotated[i+2]);
+                rotated[i] = x * cos_a - z * sin_a;
+                rotated[i+2] = x * sin_a + z * cos_a;
+            }
+            
+            Draw_queue.lock().unwrap().push(Draw_components {
+                draw_type: "3d_object".to_string(),
+                draw_x: 5.0,
+                draw_y: 1.0,
+                draw_z: -5.0,
+                draw_symbol: '#',
+                draw_vertices: rotated,
+                draw_RGBA_color: [0, 255, 0, 255],
+                draw_texture_path: "none".to_string(),
+                draw_special_name: "none".to_string()
+            });
 
             // let keys = avoengine::console_input::get_pressed_keys();
             let keys = avoengine::window_processing::get_pressed_keys(&window);
@@ -205,7 +235,7 @@ fn main() {
                             camera.camera_y += basis.right[1] * camera_speed;
                             camera.camera_z += basis.right[2] * camera_speed;
                         },
-                        KeyCode::KeyQ => break,
+                        KeyCode::KeyQ => std::process::exit(0),
                         _ => {}
                     }
                 }
