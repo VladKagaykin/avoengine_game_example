@@ -18,7 +18,7 @@ fn main() {
                                      draw_symbol: '#', 
                                      draw_vertices: vec![1.0,1.0,1.0,-1.0,-1.0,-1.0,-1.0,1.0],
                                      draw_RGBA_color: [255,255,255,25],
-                                     draw_texture_path: "none".to_string(),
+                                     draw_texture_path: "data/penza_low.png".to_string(),
                                      draw_special_name: "none".to_string()};
     let cube_vertices = vec![
         1.0,  1.0,  1.0,  1.0, -1.0,  1.0, -1.0, -1.0,  1.0,
@@ -34,6 +34,10 @@ fn main() {
         1.0, -1.0,  1.0, -1.0, -1.0,  1.0, -1.0, -1.0, -1.0,
         1.0, -1.0,  1.0, -1.0, -1.0, -1.0,  1.0, -1.0, -1.0,
     ];
+    let vertices = vec![
+                1.0, 0.0, 1.0,  1.0, 0.0, -1.0,  -1.0, 0.0, -1.0,  
+                1.0, 0.0, 1.0,  -1.0, 0.0, -1.0,  -1.0, 0.0, 1.0   
+            ];
     Static_scene.lock().unwrap().push(square);
     drop(settings);
     Engine_setup();
@@ -44,23 +48,32 @@ fn main() {
         for z in (-10..10).step_by(2) {
             plita = ((x / 2) + (z / 2)) % 2 == 0;
             let color = if plita { [58, 58, 58, 255] } else { [3, 78, 37, 255] };
-            let vertices = vec![
-                1.0, 0.0, 1.0,  1.0, 0.0, -1.0,  -1.0, 0.0, -1.0,  
-                1.0, 0.0, 1.0,  -1.0, 0.0, -1.0,  -1.0, 0.0, 1.0   
-            ];
             Static_scene.lock().unwrap().push(Draw_components {
                 draw_type: "3d_object".to_string(),
                 draw_x: x as f32,
                 draw_y: 0.0,
                 draw_z: z as f32,
                 draw_symbol: '█',
-                draw_vertices: vertices,
+                draw_vertices: vertices.clone(),
                 draw_RGBA_color: color,
                 draw_texture_path: "none".to_string(),
                 draw_special_name: "none".to_string()
             });
         }
     }
+
+    Static_scene.lock().unwrap().push(Draw_components {
+                draw_type: "3d_object".to_string(),
+                draw_x: 0.0,
+                draw_y: 10.0,
+                draw_z: 0.0,
+                draw_symbol: '█',
+                draw_vertices: vertices.clone(),
+                draw_RGBA_color: [255,255,255,255],
+                draw_texture_path: "avoengine_rust/src/logo.png".to_string(),
+                draw_special_name: "none".to_string()
+            });
+
     Static_scene.lock().unwrap().push(Draw_components {
         draw_type: "3d_object".to_string(),
         draw_x: 7.0,
