@@ -8,6 +8,8 @@ use winit::keyboard::PhysicalKey;
 use winit::event::ElementState;
 
 fn main() {
+    let mut fps_last_time = Instant::now();
+    let mut fps_frame_count = 0;
     let (window, event_loop) = window_processing::create_window("avoengine".to_string());
     let settings = Engine_settings.lock().unwrap();
     Setup_window(&settings.window_width, &settings.window_height);
@@ -21,19 +23,49 @@ fn main() {
                                      draw_texture_path: "data/penza_low.png".to_string(),
                                      draw_special_name: "none".to_string()};
     let cube_vertices = vec![
-        1.0,  1.0,  1.0,  1.0, -1.0,  1.0, -1.0, -1.0,  1.0,
-        1.0,  1.0,  1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0,
-        1.0,  1.0, -1.0, -1.0,  1.0, -1.0, -1.0, -1.0, -1.0,
-        1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0, -1.0, -1.0,
-        -1.0,  1.0,  1.0, -1.0, -1.0,  1.0, -1.0, -1.0, -1.0,
-        -1.0,  1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0, -1.0,
-        1.0,  1.0, -1.0,  1.0, -1.0, -1.0,  1.0, -1.0,  1.0,
-        1.0,  1.0, -1.0,  1.0, -1.0,  1.0,  1.0,  1.0,  1.0,
-        1.0,  1.0,  1.0,  1.0,  1.0, -1.0, -1.0,  1.0, -1.0,
-        1.0,  1.0,  1.0, -1.0,  1.0, -1.0, -1.0,  1.0,  1.0,
-        1.0, -1.0,  1.0, -1.0, -1.0,  1.0, -1.0, -1.0, -1.0,
-        1.0, -1.0,  1.0, -1.0, -1.0, -1.0,  1.0, -1.0, -1.0,
+        -1.0, -1.0,  1.0,
+        1.0, -1.0,  1.0,
+        1.0,  1.0,  1.0,
+        -1.0, -1.0,  1.0,
+        1.0,  1.0,  1.0,
+        -1.0,  1.0,  1.0,
+
+        -1.0, -1.0, -1.0,
+        -1.0,  1.0, -1.0,
+        1.0,  1.0, -1.0,
+        -1.0, -1.0, -1.0,
+        1.0,  1.0, -1.0,
+        1.0, -1.0, -1.0,
+
+        -1.0, -1.0, -1.0,
+        -1.0, -1.0,  1.0,
+        -1.0,  1.0,  1.0,
+        -1.0, -1.0, -1.0,
+        -1.0,  1.0,  1.0,
+        -1.0,  1.0, -1.0,
+
+        1.0, -1.0, -1.0,
+        1.0,  1.0, -1.0,
+        1.0,  1.0,  1.0,
+        1.0, -1.0, -1.0,
+        1.0,  1.0,  1.0,
+        1.0, -1.0,  1.0,
+
+        -1.0,  1.0, -1.0,
+        -1.0,  1.0,  1.0,
+        1.0,  1.0,  1.0,
+        -1.0,  1.0, -1.0,
+        1.0,  1.0,  1.0,
+        1.0,  1.0, -1.0,
+
+        -1.0, -1.0, -1.0,
+        1.0, -1.0, -1.0,
+        1.0, -1.0,  1.0,
+        -1.0, -1.0, -1.0,
+        1.0, -1.0,  1.0,
+        -1.0, -1.0,  1.0,
     ];
+    
     let vertices = vec![
                 1.0, 0.0, 1.0,  1.0, 0.0, -1.0,  -1.0, 0.0, -1.0,  
                 1.0, 0.0, 1.0,  -1.0, 0.0, -1.0,  -1.0, 0.0, 1.0   
@@ -68,7 +100,10 @@ fn main() {
                 draw_y: 10.0,
                 draw_z: 0.0,
                 draw_symbol: '█',
-                draw_vertices: vertices.clone(),
+                draw_vertices: vec![
+                                    1.0, 0.0, 1.0,  -1.0, 0.0, -1.0,  1.0, 0.0, -1.0,
+                                    1.0, 0.0, 1.0,  -1.0, 0.0, 1.0,  -1.0, 0.0, -1.0,
+                                ],
                 draw_RGBA_color: [255,255,255,255],
                 draw_texture_path: "avoengine_rust/src/logo.png".to_string(),
                 draw_special_name: "none".to_string()
@@ -103,9 +138,21 @@ fn main() {
         draw_z: 5.0,
         draw_symbol: '#',
         draw_vertices: cube_vertices.clone(),
-        draw_RGBA_color: [255, 255, 255, 25],
+        draw_RGBA_color: [255, 255, 255, 64],
         draw_texture_path: "none".to_string(),
         draw_special_name: "none".to_string()
+    });
+
+    Static_light.lock().unwrap().push(Light_components {
+        light_x: 0.0,
+        light_y: 5.0,
+        light_z: 0.0,
+        light_RGB_color: [255, 255, 255],
+        light_distance: 58.0,
+        light_cone_angle: 90.0,
+        light_pitch: 1.0,
+        light_yaw: 0.0,
+        light_special_name: "none".to_string()
     });
     
     let mut last_fps_tick = 0;
@@ -113,6 +160,7 @@ fn main() {
     let mut last_frame_count = 0;
     let mut camera_speed:f32 = 0.58;
     let mut camera_angle_speed: f32 = 5.8; 
+    let mut yaw_camera: f32 = 0.0;
     
     event_loop.run(move |event, target| {
     target.set_control_flow(ControlFlow::Poll);
@@ -154,6 +202,54 @@ fn main() {
                 rotated[i] = x * cos_a - z * sin_a;
                 rotated[i+2] = x * sin_a + z * cos_a;
             }
+
+            yaw_camera += 25.0;
+
+            Light_queue.lock().unwrap().push(Light_components {
+                light_x: 0.0,
+                light_y: 1.0,
+                light_z: 0.0,
+                light_RGB_color: [0, 255, 0],
+                light_distance: 580.0,
+                light_cone_angle: 90.0,
+                light_pitch: 90.0,
+                light_yaw:yaw_camera,
+                light_special_name: "none".to_string()
+            });
+            Light_queue.lock().unwrap().push(Light_components {
+                light_x: 0.0,
+                light_y: 1.0,
+                light_z: 0.0,
+                light_RGB_color: [0, 0, 255],
+                light_distance: 580.0,
+                light_cone_angle: 90.0,
+                light_pitch: 90.0,
+                light_yaw:yaw_camera-90.0,
+                light_special_name: "none".to_string()
+            });
+            Light_queue.lock().unwrap().push(Light_components {
+                light_x: 0.0,
+                light_y: 1.0,
+                light_z: 0.0,
+                light_RGB_color: [255, 0, 0],
+                light_distance: 580.0,
+                light_cone_angle: 90.0,
+                light_pitch: 90.0,
+                light_yaw:yaw_camera-180.0,
+                light_special_name: "none".to_string()
+            });
+
+            Light_queue.lock().unwrap().push(Light_components {
+                light_x: 0.0,
+                light_y: 1.0,
+                light_z: 0.0,
+                light_RGB_color: [255, 255, 255],
+                light_distance: 580.0,
+                light_cone_angle: 90.0,
+                light_pitch: 90.0,
+                light_yaw:yaw_camera-270.0,
+                light_special_name: "none".to_string()
+            });
             
             Draw_queue.lock().unwrap().push(Draw_components {
                 draw_type: "3d_object".to_string(),
@@ -171,12 +267,13 @@ fn main() {
             let keys = avoengine::window_processing::get_pressed_keys(&window);
 
             let current_tick = avoengine::tick_system::Get_tick();
-            frame_count += 1;
-
-            if current_tick - last_fps_tick >= 20 {
-                last_frame_count = frame_count.clone();
-                frame_count = 0;
-                last_fps_tick = current_tick;
+            fps_frame_count += 1;
+            let elapsed = fps_last_time.elapsed();
+            if elapsed >= Duration::from_secs(1) {
+                let fps = fps_frame_count as f64 / elapsed.as_secs_f64();
+                last_frame_count=fps as i128;
+                fps_frame_count = 0;
+                fps_last_time = Instant::now();
             }
 
             // {
@@ -259,7 +356,7 @@ fn main() {
             
             let _ = window_processing::update_frame(&window);
 
-            println!("[Q]Exit;    Camera angle: [I]Up;[J]Left;[K]Down;[L]Right;;    Camera Position: [W]Forward;[A]Left;[S]Backward;[D]Right;");
+            println!("[Q]Exit;    Camera angle: [I]Up;[J]Left;[K]Down;[L]Right;    Camera Position: [W]Forward;[A]Left;[S]Backward;[D]Right;");
 
             println!("{:?}", keys);
 
