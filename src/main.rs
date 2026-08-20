@@ -154,13 +154,16 @@ fn main() {
         light_yaw: 0.0,
         light_special_name: "none".to_string()
     });
+    let mut examination = avoengine::Is_scene_changed.lock().unwrap();
+    *examination = true;
+    drop(examination);
     
     let mut last_fps_tick = 0;
     let mut frame_count = 0;
     let mut last_frame_count = 0;
     let mut camera_speed:f32 = 0.58;
     let mut camera_angle_speed: f32 = 5.8; 
-    let mut yaw_camera: f32 = 0.0;
+    let mut yaw_light: f32 = 0.0;
     
     event_loop.run(move |event, target| {
     target.set_control_flow(ControlFlow::Poll);
@@ -203,7 +206,7 @@ fn main() {
                 rotated[i+2] = x * sin_a + z * cos_a;
             }
 
-            yaw_camera += 25.0;
+            yaw_light += 25.0;
 
             Light_queue.lock().unwrap().push(Light_components {
                 light_x: 0.0,
@@ -213,7 +216,7 @@ fn main() {
                 light_distance: 580.0,
                 light_cone_angle: 90.0,
                 light_pitch: 90.0,
-                light_yaw:yaw_camera,
+                light_yaw:yaw_light,
                 light_special_name: "none".to_string()
             });
             Light_queue.lock().unwrap().push(Light_components {
@@ -224,7 +227,7 @@ fn main() {
                 light_distance: 580.0,
                 light_cone_angle: 90.0,
                 light_pitch: 90.0,
-                light_yaw:yaw_camera-90.0,
+                light_yaw:yaw_light-90.0,
                 light_special_name: "none".to_string()
             });
             Light_queue.lock().unwrap().push(Light_components {
@@ -235,7 +238,7 @@ fn main() {
                 light_distance: 580.0,
                 light_cone_angle: 90.0,
                 light_pitch: 90.0,
-                light_yaw:yaw_camera-180.0,
+                light_yaw:yaw_light-180.0,
                 light_special_name: "none".to_string()
             });
 
@@ -247,7 +250,7 @@ fn main() {
                 light_distance: 580.0,
                 light_cone_angle: 90.0,
                 light_pitch: 90.0,
-                light_yaw:yaw_camera-270.0,
+                light_yaw:yaw_light-270.0,
                 light_special_name: "none".to_string()
             });
             
