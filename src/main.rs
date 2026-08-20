@@ -164,6 +164,7 @@ fn main() {
     let mut camera_speed:f32 = 0.58;
     let mut camera_angle_speed: f32 = 5.8; 
     let mut yaw_light: f32 = 0.0;
+    let mut last_tick: u128 = 0;
     
     event_loop.run(move |event, target| {
     target.set_control_flow(ControlFlow::Poll);
@@ -195,6 +196,7 @@ fn main() {
         }
         Event::AboutToWait => {
             avoengine::tick_system::Tick_update();
+            let current_tick = avoengine::tick_system::Get_tick();
 
             let angle = (avoengine::tick_system::Get_tick() as f32 * 0.02) % (2.0 * PI);
             let (sin_a, cos_a) = (angle.sin(), angle.cos());
@@ -205,8 +207,6 @@ fn main() {
                 rotated[i] = x * cos_a - z * sin_a;
                 rotated[i+2] = x * sin_a + z * cos_a;
             }
-
-            yaw_light += 25.0;
 
             Light_queue.lock().unwrap().push(Light_components {
                 light_x: 0.0,
@@ -269,7 +269,6 @@ fn main() {
             // let keys = avoengine::console_input::get_pressed_keys();
             let keys = avoengine::window_processing::get_pressed_keys(&window);
 
-            let current_tick = avoengine::tick_system::Get_tick();
             fps_frame_count += 1;
             let elapsed = fps_last_time.elapsed();
             if elapsed >= Duration::from_secs(1) {
@@ -314,44 +313,48 @@ fn main() {
             //         _ => {}
             //     }
             // }
+            if current_tick != last_tick.try_into().unwrap(){
+                yaw_light += 25.0;
 
-            {
-                let mut camera = Camera.lock().unwrap();
-                
-                for key in &keys {
-                    match key {
-                        KeyCode::KeyI => camera.camera_pitch += camera_angle_speed,
-                        KeyCode::KeyK => camera.camera_pitch -= camera_angle_speed,
-                        KeyCode::KeyJ => camera.camera_yaw += camera_angle_speed,
-                        KeyCode::KeyL => camera.camera_yaw -= camera_angle_speed,
-                        KeyCode::KeyW => {
-                            let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
-                            camera.camera_x += basis.forward[0] * camera_speed;
-                            camera.camera_y += basis.forward[1] * camera_speed;
-                            camera.camera_z += basis.forward[2] * camera_speed;
-                        },
-                        KeyCode::KeyS => {
-                            let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
-                            camera.camera_x -= basis.forward[0] * camera_speed;
-                            camera.camera_y -= basis.forward[1] * camera_speed;
-                            camera.camera_z -= basis.forward[2] * camera_speed;
-                        },
-                        KeyCode::KeyA => {
-                            let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
-                            camera.camera_x -= basis.right[0] * camera_speed;
-                            camera.camera_y -= basis.right[1] * camera_speed;
-                            camera.camera_z -= basis.right[2] * camera_speed;
-                        },
-                        KeyCode::KeyD => {
-                            let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
-                            camera.camera_x += basis.right[0] * camera_speed;
-                            camera.camera_y += basis.right[1] * camera_speed;
-                            camera.camera_z += basis.right[2] * camera_speed;
-                        },
-                        KeyCode::KeyQ => std::process::exit(0),
-                        _ => {}
+                {
+                    let mut camera = Camera.lock().unwrap();
+                    
+                    for key in &keys {
+                        match key {
+                            KeyCode::KeyI => camera.camera_pitch += camera_angle_speed,
+                            KeyCode::KeyK => camera.camera_pitch -= camera_angle_speed,
+                            KeyCode::KeyJ => camera.camera_yaw += camera_angle_speed,
+                            KeyCode::KeyL => camera.camera_yaw -= camera_angle_speed,
+                            KeyCode::KeyW => {
+                                let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
+                                camera.camera_x += basis.forward[0] * camera_speed;
+                                camera.camera_y += basis.forward[1] * camera_speed;
+                                camera.camera_z += basis.forward[2] * camera_speed;
+                            },
+                            KeyCode::KeyS => {
+                                let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
+                                camera.camera_x -= basis.forward[0] * camera_speed;
+                                camera.camera_y -= basis.forward[1] * camera_speed;
+                                camera.camera_z -= basis.forward[2] * camera_speed;
+                            },
+                            KeyCode::KeyA => {
+                                let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
+                                camera.camera_x -= basis.right[0] * camera_speed;
+                                camera.camera_y -= basis.right[1] * camera_speed;
+                                camera.camera_z -= basis.right[2] * camera_speed;
+                            },
+                            KeyCode::KeyD => {
+                                let basis = avoengine::console_rc_render::camera_basis(camera.camera_pitch, camera.camera_yaw, camera.camera_roll);
+                                camera.camera_x += basis.right[0] * camera_speed;
+                                camera.camera_y += basis.right[1] * camera_speed;
+                                camera.camera_z += basis.right[2] * camera_speed;
+                            },
+                            KeyCode::KeyQ => std::process::exit(0),
+                            _ => {}
+                        }
                     }
                 }
+            last_tick = current_tick;
             }
 
             avoengine::console_rc_render::Render_image_to_console();
