@@ -1,0 +1,8 @@
+// Map_objects
+
+// Static_scene
+Draw_components("3d_object", 0, 5, 0, '█', [1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0], [255, 255, 255, 255], "data/heman.gif", "none")
+
+// Static_light
+
+// Map_scripts
