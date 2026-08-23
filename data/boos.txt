@@ -1,0 +1,255 @@
+// Map_objects
+"seed" = "58058"
+"chunk_size" = "8"
+"cell_size" = "5"
+"wall_height" = "5.8"
+"wall_threshold" = "0.6"
+"wall_thickness" = "0.1"
+"wall_color_r" = "160"
+"wall_color_g" = "140"
+"wall_color_b" = "120"
+"wall_color_a" = "255"
+"floor_color_r" = "90"
+"floor_color_g" = "100"
+"floor_color_b" = "110"
+"floor_color_a" = "255"
+"ceiling_color_r" = "200"
+"ceiling_color_g" = "200"
+"ceiling_color_b" = "200"
+"ceiling_color_a" = "255"
+"current_chunk" = "none"
+
+// Static_scene
+
+// Static_light
+
+// Map_scripts
+Script("on_tick", "
+let seed = get_map_object("seed").to_int();
+let chunk_size = get_map_object("chunk_size").to_int();
+let cell_size = get_map_object("cell_size").to_float();
+let wall_height = get_map_object("wall_height").to_float();
+let wall_threshold = get_map_object("wall_threshold").to_float();
+let wall_thickness = get_map_object("wall_thickness").to_float();
+let cam_x = get_camera_x().to_float();
+let cam_z = get_camera_z().to_float();
+
+let wall_color_r = get_map_object("wall_color_r").to_int();
+let wall_color_g = get_map_object("wall_color_g").to_int();
+let wall_color_b = get_map_object("wall_color_b").to_int();
+let wall_color_a = get_map_object("wall_color_a").to_int();
+let floor_color_r = get_map_object("floor_color_r").to_int();
+let floor_color_g = get_map_object("floor_color_g").to_int();
+let floor_color_b = get_map_object("floor_color_b").to_int();
+let floor_color_a = get_map_object("floor_color_a").to_int();
+let ceiling_color_r = get_map_object("ceiling_color_r").to_int();
+let ceiling_color_g = get_map_object("ceiling_color_g").to_int();
+let ceiling_color_b = get_map_object("ceiling_color_b").to_int();
+let ceiling_color_a = get_map_object("ceiling_color_a").to_int();
+
+let wall_color = [wall_color_r, wall_color_g, wall_color_b, wall_color_a];
+let floor_color = [floor_color_r, floor_color_g, floor_color_b, floor_color_a];
+let ceiling_color = [ceiling_color_r, ceiling_color_g, ceiling_color_b, ceiling_color_a];
+
+// вспомогательная функция округления вниз для отрицательных чисел
+fn floor_i(x) {
+    let xi = x.to_int();
+    if x < 0.0 {
+        if xi.to_float() != x {
+            xi = xi - 1;
+        }
+    }
+    return xi;
+}
+
+// хеш от целочисленных координат
+fn hash2d(x, z, s) {
+    let xi = x & 0xfffff;
+    let zi = z & 0xfffff;
+    let h = s;
+    h = h ^ (xi * 374761393 + zi * 668265263);
+    h = h & 0x7fffffff;
+    h = (h ^ (h >> 13)) * 1274126177;
+    h = h & 0x7fffffff;
+    h = h ^ (h >> 16);
+    return h & 0x7fffffff;
+}
+
+// пол (без изменений)
+fn make_floor_vertices(x, z, size) {
+    let x1 = x + size;
+    let z1 = z + size;
+    return [
+        x, 0.0, z,    x1, 0.0, z,    x1, 0.0, z1,
+        x, 0.0, z,    x1, 0.0, z1,   x, 0.0, z1
+    ];
+}
+
+// потолок – теперь высота передаётся параметром
+fn make_ceiling_vertices(x, z, size, y) {
+    let x1 = x + size;
+    let z1 = z + size;
+    return [
+        x, y, z,    x1, y, z,    x1, y, z1,
+        x, y, z,    x1, y, z1,   x, y, z1
+    ];
+}
+
+// стены по оси X (без изменений)
+fn make_wall_box_x(x1, x2, z0, y_top, thickness) {
+    let z_min = z0 - thickness / 2.0;
+    let z_max = z0 + thickness / 2.0;
+    let v0 = [x1, 0.0, z_min];
+    let v1 = [x2, 0.0, z_min];
+    let v2 = [x2, 0.0, z_max];
+    let v3 = [x1, 0.0, z_max];
+    let v4 = [x1, y_top, z_min];
+    let v5 = [x2, y_top, z_min];
+    let v6 = [x2, y_top, z_max];
+    let v7 = [x1, y_top, z_max];
+
+    return [
+        v0[0], v0[1], v0[2],  v2[0], v2[1], v2[2],  v1[0], v1[1], v1[2],
+        v0[0], v0[1], v0[2],  v3[0], v3[1], v3[2],  v2[0], v2[1], v2[2],
+        v4[0], v4[1], v4[2],  v5[0], v5[1], v5[2],  v6[0], v6[1], v6[2],
+        v4[0], v4[1], v4[2],  v6[0], v6[1], v6[2],  v7[0], v7[1], v7[2],
+        v3[0], v3[1], v3[2],  v2[0], v2[1], v2[2],  v6[0], v6[1], v6[2],
+        v3[0], v3[1], v3[2],  v6[0], v6[1], v6[2],  v7[0], v7[1], v7[2],
+        v0[0], v0[1], v0[2],  v1[0], v1[1], v1[2],  v5[0], v5[1], v5[2],
+        v0[0], v0[1], v0[2],  v5[0], v5[1], v5[2],  v4[0], v4[1], v4[2],
+        v0[0], v0[1], v0[2],  v4[0], v4[1], v4[2],  v7[0], v7[1], v7[2],
+        v0[0], v0[1], v0[2],  v7[0], v7[1], v7[2],  v3[0], v3[1], v3[2],
+        v1[0], v1[1], v1[2],  v2[0], v2[1], v2[2],  v6[0], v6[1], v6[2],
+        v1[0], v1[1], v1[2],  v6[0], v6[1], v6[2],  v5[0], v5[1], v5[2]
+    ];
+}
+
+// стены по оси Z (без изменений)
+fn make_wall_box_z(x0, z1, z2, y_top, thickness) {
+    let x_min = x0 - thickness / 2.0;
+    let x_max = x0 + thickness / 2.0;
+    let v0 = [x_min, 0.0, z1];
+    let v1 = [x_max, 0.0, z1];
+    let v2 = [x_max, 0.0, z2];
+    let v3 = [x_min, 0.0, z2];
+    let v4 = [x_min, y_top, z1];
+    let v5 = [x_max, y_top, z1];
+    let v6 = [x_max, y_top, z2];
+    let v7 = [x_min, y_top, z2];
+
+    return [
+        v0[0], v0[1], v0[2],  v2[0], v2[1], v2[2],  v1[0], v1[1], v1[2],
+        v0[0], v0[1], v0[2],  v3[0], v3[1], v3[2],  v2[0], v2[1], v2[2],
+        v4[0], v4[1], v4[2],  v5[0], v5[1], v5[2],  v6[0], v6[1], v6[2],
+        v4[0], v4[1], v4[2],  v6[0], v6[1], v6[2],  v7[0], v7[1], v7[2],
+        v1[0], v1[1], v1[2],  v2[0], v2[1], v2[2],  v6[0], v6[1], v6[2],
+        v1[0], v1[1], v1[2],  v6[0], v6[1], v6[2],  v5[0], v5[1], v5[2],
+        v0[0], v0[1], v0[2],  v4[0], v4[1], v4[2],  v7[0], v7[1], v7[2],
+        v0[0], v0[1], v0[2],  v7[0], v7[1], v7[2],  v3[0], v3[1], v3[2],
+        v0[0], v0[1], v0[2],  v1[0], v1[1], v1[2],  v5[0], v5[1], v5[2],
+        v0[0], v0[1], v0[2],  v5[0], v5[1], v5[2],  v4[0], v4[1], v4[2],
+        v3[0], v3[1], v3[2],  v2[0], v2[1], v2[2],  v6[0], v6[1], v6[2],
+        v3[0], v3[1], v3[2],  v6[0], v6[1], v6[2],  v7[0], v7[1], v7[2]
+    ];
+}
+
+// добавление пола
+fn push_floor(x, z, size, color, chunk_name) {
+    let empty_tex = "";
+    let verts = make_floor_vertices(x, z, size);
+    let comp = Draw_components("3d_object", 0.0, 0.0, 0.0, ' ', verts, color, empty_tex, chunk_name);
+    push_static_draw(comp);
+}
+
+// добавление потолка – теперь с параметром высоты
+fn push_ceiling(x, z, size, height, color, chunk_name) {
+    let empty_tex = "";
+    let verts = make_ceiling_vertices(x, z, size, height);
+    let comp = Draw_components("3d_object", 0.0, 0.0, 0.0, ' ', verts, color, empty_tex, chunk_name);
+    push_static_draw(comp);
+}
+
+// стена по X
+fn push_wall_x(x1, x2, z0, y_top, thickness, color, chunk_name) {
+    let empty_tex = "";
+    let verts = make_wall_box_x(x1, x2, z0, y_top, thickness);
+    let comp = Draw_components("3d_object", 0.0, 0.0, 0.0, '#', verts, color, empty_tex, chunk_name);
+    push_static_draw(comp);
+}
+
+// стена по Z
+fn push_wall_z(x0, z1, z2, y_top, thickness, color, chunk_name) {
+    let empty_tex = "";
+    let verts = make_wall_box_z(x0, z1, z2, y_top, thickness);
+    let comp = Draw_components("3d_object", 0.0, 0.0, 0.0, '#', verts, color, empty_tex, chunk_name);
+    push_static_draw(comp);
+}
+
+// генерация одного чанка
+fn generate_chunk(cx, cz, seed, chunk_size, cell_size, wall_height, wall_threshold, wall_thickness, wall_color, floor_color, ceiling_color, cam_x, cam_z) {
+    let base_x = cx * chunk_size * cell_size;
+    let base_z = cz * chunk_size * cell_size;
+
+    let chunk_name = "chunk_" + cx.to_string() + "_" + cz.to_string();
+
+    let lx = 0;
+    while lx < chunk_size {
+        let lz = 0;
+        while lz < chunk_size {
+            let wx = base_x + lx.to_float() * cell_size;
+            let wz = base_z + lz.to_float() * cell_size;
+
+            // абсолютные целочисленные индексы ячеек (для неповторяющегося шума)
+            let ax = cx * chunk_size + lx;
+            let az = cz * chunk_size + lz;
+
+            push_floor(wx, wz, cell_size, floor_color, chunk_name);
+            push_ceiling(wx, wz, cell_size, wall_height, ceiling_color, chunk_name);
+
+            // верхняя стена (соседняя ячейка по +Z)
+            let noise_upper = hash2d(ax, az - 1, seed).to_float() / 2147483647.0;
+            if noise_upper > wall_threshold {
+                let x1 = wx;
+                let x2 = wx + cell_size;
+                push_wall_x(x1, x2, wz, wall_height, wall_thickness, wall_color, chunk_name);
+            }
+
+            // левая стена (соседняя ячейка по -X)
+            let noise_left = hash2d(ax - 1, az, seed).to_float() / 2147483647.0;
+            if noise_left > wall_threshold {
+                let z1 = wz;
+                let z2 = wz + cell_size;
+                push_wall_z(wx, z1, z2, wall_height, wall_thickness, wall_color, chunk_name);
+            }
+
+            lz = lz + 1;
+        }
+        lx = lx + 1;
+    }
+}
+
+// основная логика загрузки
+let chunk_temp = chunk_size * cell_size;
+let chunk_x = floor_i(cam_x / chunk_temp);
+let chunk_z = floor_i(cam_z / chunk_temp);
+let new_chunk = chunk_x.to_string() + "_" + chunk_z.to_string();
+let old_chunk = get_map_object("current_chunk");
+
+if old_chunk != new_chunk {
+    set_map_object("current_chunk", new_chunk);
+    clear_static_scene();
+
+    let dx = -1;
+    while dx <= 1 {
+        let dz = -1;
+        while dz <= 1 {
+            let gen_x = chunk_x + dx;
+            let gen_z = chunk_z + dz;
+            generate_chunk(gen_x, gen_z, seed, chunk_size, cell_size, wall_height, wall_threshold, wall_thickness, wall_color, floor_color, ceiling_color, cam_x, cam_z);
+            dz = dz + 1;
+        }
+        dx = dx + 1;
+    }
+    set_scene_changed(true);
+}
+")

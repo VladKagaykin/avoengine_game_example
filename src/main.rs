@@ -15,8 +15,8 @@ fn main() {
     Engine_setup();
     avoengine::tick_system::Init_tick_system();
     
-    avoengine::maps::Load_map("data/default_map.txt".to_string());
-    // avoengine::maps::Load_map("data/boof.txt".to_string());
+    // avoengine::maps::Load_map("data/default_map.txt".to_string());
+    avoengine::maps::Load_map("data/boos.txt".to_string());
 
     
     let mut camera_speed:f32 = 0.58;
@@ -101,6 +101,7 @@ fn main() {
                     }
                 }
             last_tick = current_tick;
+            // avoengine::maps::Do_all_scripts();
             }
 
             avoengine::maps::Do_all_scripts();
