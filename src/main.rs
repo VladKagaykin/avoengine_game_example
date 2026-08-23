@@ -16,6 +16,8 @@ fn main() {
     avoengine::tick_system::Init_tick_system();
     
     avoengine::maps::Load_map("data/default_map.txt".to_string());
+    // avoengine::maps::Load_map("data/boof.txt".to_string());
+
     
     let mut camera_speed:f32 = 0.58;
     let mut camera_angle_speed: f32 = 5.8; 
