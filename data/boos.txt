@@ -25,33 +25,32 @@
 
 // Map_scripts
 Script("on_tick", "
-let seed = get_map_object("seed").to_int();
-let chunk_size = get_map_object("chunk_size").to_int();
-let cell_size = get_map_object("cell_size").to_float();
-let wall_height = get_map_object("wall_height").to_float();
-let wall_threshold = get_map_object("wall_threshold").to_float();
-let wall_thickness = get_map_object("wall_thickness").to_float();
+let seed = get_map_object(\"seed\").to_int();
+let chunk_size = get_map_object(\"chunk_size\").to_int();
+let cell_size = get_map_object(\"cell_size\").to_float();
+let wall_height = get_map_object(\"wall_height\").to_float();
+let wall_threshold = get_map_object(\"wall_threshold\").to_float();
+let wall_thickness = get_map_object(\"wall_thickness\").to_float();
 let cam_x = get_camera_x().to_float();
 let cam_z = get_camera_z().to_float();
 
-let wall_color_r = get_map_object("wall_color_r").to_int();
-let wall_color_g = get_map_object("wall_color_g").to_int();
-let wall_color_b = get_map_object("wall_color_b").to_int();
-let wall_color_a = get_map_object("wall_color_a").to_int();
-let floor_color_r = get_map_object("floor_color_r").to_int();
-let floor_color_g = get_map_object("floor_color_g").to_int();
-let floor_color_b = get_map_object("floor_color_b").to_int();
-let floor_color_a = get_map_object("floor_color_a").to_int();
-let ceiling_color_r = get_map_object("ceiling_color_r").to_int();
-let ceiling_color_g = get_map_object("ceiling_color_g").to_int();
-let ceiling_color_b = get_map_object("ceiling_color_b").to_int();
-let ceiling_color_a = get_map_object("ceiling_color_a").to_int();
+let wall_color_r = get_map_object(\"wall_color_r\").to_int();
+let wall_color_g = get_map_object(\"wall_color_g\").to_int();
+let wall_color_b = get_map_object(\"wall_color_b\").to_int();
+let wall_color_a = get_map_object(\"wall_color_a\").to_int();
+let floor_color_r = get_map_object(\"floor_color_r\").to_int();
+let floor_color_g = get_map_object(\"floor_color_g\").to_int();
+let floor_color_b = get_map_object(\"floor_color_b\").to_int();
+let floor_color_a = get_map_object(\"floor_color_a\").to_int();
+let ceiling_color_r = get_map_object(\"ceiling_color_r\").to_int();
+let ceiling_color_g = get_map_object(\"ceiling_color_g\").to_int();
+let ceiling_color_b = get_map_object(\"ceiling_color_b\").to_int();
+let ceiling_color_a = get_map_object(\"ceiling_color_a\").to_int();
 
 let wall_color = [wall_color_r, wall_color_g, wall_color_b, wall_color_a];
 let floor_color = [floor_color_r, floor_color_g, floor_color_b, floor_color_a];
 let ceiling_color = [ceiling_color_r, ceiling_color_g, ceiling_color_b, ceiling_color_a];
 
-// вспомогательная функция округления вниз для отрицательных чисел
 fn floor_i(x) {
     let xi = x.to_int();
     if x < 0.0 {
@@ -62,7 +61,6 @@ fn floor_i(x) {
     return xi;
 }
 
-// хеш от целочисленных координат
 fn hash2d(x, z, s) {
     let xi = x & 0xfffff;
     let zi = z & 0xfffff;
@@ -75,7 +73,6 @@ fn hash2d(x, z, s) {
     return h & 0x7fffffff;
 }
 
-// пол (без изменений)
 fn make_floor_vertices(x, z, size) {
     let x1 = x + size;
     let z1 = z + size;
@@ -85,7 +82,6 @@ fn make_floor_vertices(x, z, size) {
     ];
 }
 
-// потолок – теперь высота передаётся параметром
 fn make_ceiling_vertices(x, z, size, y) {
     let x1 = x + size;
     let z1 = z + size;
@@ -95,7 +91,6 @@ fn make_ceiling_vertices(x, z, size, y) {
     ];
 }
 
-// стены по оси X (без изменений)
 fn make_wall_box_x(x1, x2, z0, y_top, thickness) {
     let z_min = z0 - thickness / 2.0;
     let z_max = z0 + thickness / 2.0;
@@ -124,7 +119,6 @@ fn make_wall_box_x(x1, x2, z0, y_top, thickness) {
     ];
 }
 
-// стены по оси Z (без изменений)
 fn make_wall_box_z(x0, z1, z2, y_top, thickness) {
     let x_min = x0 - thickness / 2.0;
     let x_max = x0 + thickness / 2.0;
@@ -153,44 +147,39 @@ fn make_wall_box_z(x0, z1, z2, y_top, thickness) {
     ];
 }
 
-// добавление пола
 fn push_floor(x, z, size, color, chunk_name) {
-    let empty_tex = "";
+    let empty_tex = \"\";
     let verts = make_floor_vertices(x, z, size);
-    let comp = Draw_components("3d_object", 0.0, 0.0, 0.0, ' ', verts, color, empty_tex, chunk_name);
+    let comp = Draw_components(\"3d_object\", 0.0, 0.0, 0.0, ' ', verts, color, empty_tex, chunk_name);
     push_static_draw(comp);
 }
 
-// добавление потолка – теперь с параметром высоты
 fn push_ceiling(x, z, size, height, color, chunk_name) {
-    let empty_tex = "";
+    let empty_tex = \"\";
     let verts = make_ceiling_vertices(x, z, size, height);
-    let comp = Draw_components("3d_object", 0.0, 0.0, 0.0, ' ', verts, color, empty_tex, chunk_name);
+    let comp = Draw_components(\"3d_object\", 0.0, 0.0, 0.0, ' ', verts, color, empty_tex, chunk_name);
     push_static_draw(comp);
 }
 
-// стена по X
 fn push_wall_x(x1, x2, z0, y_top, thickness, color, chunk_name) {
-    let empty_tex = "";
+    let empty_tex = \"\";
     let verts = make_wall_box_x(x1, x2, z0, y_top, thickness);
-    let comp = Draw_components("3d_object", 0.0, 0.0, 0.0, '#', verts, color, empty_tex, chunk_name);
+    let comp = Draw_components(\"3d_object\", 0.0, 0.0, 0.0, '#', verts, color, empty_tex, chunk_name);
     push_static_draw(comp);
 }
 
-// стена по Z
 fn push_wall_z(x0, z1, z2, y_top, thickness, color, chunk_name) {
-    let empty_tex = "";
+    let empty_tex = \"\";
     let verts = make_wall_box_z(x0, z1, z2, y_top, thickness);
-    let comp = Draw_components("3d_object", 0.0, 0.0, 0.0, '#', verts, color, empty_tex, chunk_name);
+    let comp = Draw_components(\"3d_object\", 0.0, 0.0, 0.0, '#', verts, color, empty_tex, chunk_name);
     push_static_draw(comp);
 }
 
-// генерация одного чанка
 fn generate_chunk(cx, cz, seed, chunk_size, cell_size, wall_height, wall_threshold, wall_thickness, wall_color, floor_color, ceiling_color, cam_x, cam_z) {
     let base_x = cx * chunk_size * cell_size;
     let base_z = cz * chunk_size * cell_size;
 
-    let chunk_name = "chunk_" + cx.to_string() + "_" + cz.to_string();
+    let chunk_name = \"chunk_\" + cx.to_string() + \"_\" + cz.to_string();
 
     let lx = 0;
     while lx < chunk_size {
@@ -199,14 +188,12 @@ fn generate_chunk(cx, cz, seed, chunk_size, cell_size, wall_height, wall_thresho
             let wx = base_x + lx.to_float() * cell_size;
             let wz = base_z + lz.to_float() * cell_size;
 
-            // абсолютные целочисленные индексы ячеек (для неповторяющегося шума)
             let ax = cx * chunk_size + lx;
             let az = cz * chunk_size + lz;
 
             push_floor(wx, wz, cell_size, floor_color, chunk_name);
             push_ceiling(wx, wz, cell_size, wall_height, ceiling_color, chunk_name);
 
-            // верхняя стена (соседняя ячейка по +Z)
             let noise_upper = hash2d(ax, az - 1, seed).to_float() / 2147483647.0;
             if noise_upper > wall_threshold {
                 let x1 = wx;
@@ -214,7 +201,6 @@ fn generate_chunk(cx, cz, seed, chunk_size, cell_size, wall_height, wall_thresho
                 push_wall_x(x1, x2, wz, wall_height, wall_thickness, wall_color, chunk_name);
             }
 
-            // левая стена (соседняя ячейка по -X)
             let noise_left = hash2d(ax - 1, az, seed).to_float() / 2147483647.0;
             if noise_left > wall_threshold {
                 let z1 = wz;
@@ -228,28 +214,77 @@ fn generate_chunk(cx, cz, seed, chunk_size, cell_size, wall_height, wall_thresho
     }
 }
 
-// основная логика загрузки
+fn join_array(arr, sep) {
+    let result = \"\";
+    let len = arr.len();
+    if len == 0 { return result; }
+    result = arr[0].to_string();
+    let i = 1;
+    while i < len {
+        result += sep + arr[i].to_string();
+        i = i + 1;
+    }
+    return result;
+}
+
 let chunk_temp = chunk_size * cell_size;
 let chunk_x = floor_i(cam_x / chunk_temp);
 let chunk_z = floor_i(cam_z / chunk_temp);
-let new_chunk = chunk_x.to_string() + "_" + chunk_z.to_string();
-let old_chunk = get_map_object("current_chunk");
 
-if old_chunk != new_chunk {
-    set_map_object("current_chunk", new_chunk);
-    clear_static_scene();
-
-    let dx = -1;
-    while dx <= 1 {
-        let dz = -1;
-        while dz <= 1 {
-            let gen_x = chunk_x + dx;
-            let gen_z = chunk_z + dz;
-            generate_chunk(gen_x, gen_z, seed, chunk_size, cell_size, wall_height, wall_threshold, wall_thickness, wall_color, floor_color, ceiling_color, cam_x, cam_z);
-            dz = dz + 1;
-        }
-        dx = dx + 1;
+let target = [];
+let dx = -1;
+while dx <= 1 {
+    let dz = -1;
+    while dz <= 1 {
+        let name = (chunk_x + dx).to_string() + \"_\" + (chunk_z + dz).to_string();
+        target.push(name);
+        dz = dz + 1;
     }
+    dx = dx + 1;
+}
+
+let loaded_str = get_map_object(\"loaded_chunks\");
+let loaded = [];
+if loaded_str != \"\" && loaded_str != \"none\" {
+    let parts = loaded_str.split(\",\");
+    let i = 0;
+    while i < parts.len() {
+        loaded.push(parts[i]);
+        i = i + 1;
+    }
+}
+
+let changed = false;
+
+let i = 0;
+while i < loaded.len() {
+    let name = loaded[i];
+    if !target.contains(name) {
+        let full_name = \"chunk_\" + name;
+        let removed = remove_static_draw_by_name(full_name);
+        if removed > 0 {
+            changed = true;
+        }
+    }
+    i = i + 1;
+}
+
+let i = 0;
+while i < target.len() {
+    let name = target[i];
+    if !loaded.contains(name) {
+        let parts = name.split(\"_\");
+        let gx = parts[0].to_int();
+        let gz = parts[1].to_int();
+        generate_chunk(gx, gz, seed, chunk_size, cell_size, wall_height, wall_threshold, wall_thickness, wall_color, floor_color, ceiling_color, cam_x, cam_z);
+        changed = true;
+    }
+    i = i + 1;
+}
+
+if changed {
+    let new_loaded = join_array(target, \",\");
+    set_map_object(\"loaded_chunks\", new_loaded);
     set_scene_changed(true);
 }
 ")
