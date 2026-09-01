@@ -14,6 +14,8 @@ fn main() {
     drop(settings);
     Engine_setup();
     avoengine::tick_system::Init_tick_system();
+    avoengine::sound::Init_sound();
+    avoengine::sound::Load_sound("data/voyager.wav");
     
     avoengine::maps::Load_map("data/default_map.txt".to_string());
     // avoengine::maps::Load_map("data/boos.txt".to_string());
@@ -105,6 +107,9 @@ fn main() {
                                 camera.camera_x += basis.right[0] * camera_speed;
                                 camera.camera_y += basis.right[1] * camera_speed;
                                 camera.camera_z += basis.right[2] * camera_speed;
+                            },
+                            KeyCode::KeyV => {
+                                avoengine::sound::Play_sound("data/voyager.wav",1.0);
                             },
                             KeyCode::KeyH => {
                                 avoengine::maps::Load_map("data/he_man.txt".to_string());
