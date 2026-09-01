@@ -63,20 +63,7 @@ fn main() {
 
                 {
                     let mut camera = Camera.lock().unwrap();
-
-                    avoengine::Light_queue.lock().unwrap().push(
-                        avoengine::Light_components{
-                            light_x: camera.camera_x.clone(),
-                            light_y: camera.camera_y.clone(),
-                            light_z: camera.camera_z.clone(),
-                            light_RGB_color: [255,255,255],
-                            light_distance: 580.0,
-                            light_cone_angle: 29.0,
-                            light_pitch: camera.camera_pitch.clone(),
-                            light_yaw: camera.camera_yaw.clone(),
-                            light_special_name: "none".to_string()
-                        }
-                    );
+                    let mut play_sound_3d = false;
                     
                     for key in &keys {
                         match key {
@@ -109,7 +96,13 @@ fn main() {
                                 camera.camera_z += basis.right[2] * camera_speed;
                             },
                             KeyCode::KeyV => {
-                                avoengine::sound::Play_sound("data/voyager.wav",1.0);
+                                avoengine::sound::Play_sound("data/voyager.wav", 1.0);
+                            },
+                            KeyCode::KeyC => {
+                                play_sound_3d = true;
+                            },
+                            KeyCode::KeyR => {
+                                avoengine::sound::Stop_all_sounds();
                             },
                             KeyCode::KeyH => {
                                 avoengine::maps::Load_map("data/he_man.txt".to_string());
@@ -117,6 +110,12 @@ fn main() {
                             KeyCode::KeyQ => std::process::exit(0),
                             _ => {}
                         }
+                    }
+                    
+                    drop(camera);
+                    
+                    if play_sound_3d {
+                        avoengine::sound::Play_sound_3d(0.0, 1.0, 0.0, "data/voyager.wav", 1.0);
                     }
                 }
             last_tick = current_tick;
