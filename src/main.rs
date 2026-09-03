@@ -63,6 +63,21 @@ fn main() {
 
                 {
                     let mut camera = Camera.lock().unwrap();
+
+                    avoengine::Light_queue.lock().unwrap().push(
+                        avoengine::Light_components{
+                            light_x: camera.camera_x.clone(),
+                            light_y: camera.camera_y.clone(),
+                            light_z: camera.camera_z.clone(),
+                            light_RGB_color: [255,255,255],
+                            light_distance: 580.0,
+                            light_cone_angle: 29.0,
+                            light_pitch: camera.camera_pitch.clone(),
+                            light_yaw: camera.camera_yaw.clone(),
+                            light_special_name: "none".to_string()
+                        }
+                    );
+
                     let mut play_sound_3d = false;
                     
                     for key in &keys {
