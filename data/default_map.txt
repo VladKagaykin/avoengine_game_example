@@ -122,7 +122,7 @@ Sound_components(-5, 1, 5, [-1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0
 // Map_scripts
 Script("on_tick", "
 let yaw_light = get_map_object("yaw_light").parse_float();
-let speed = 25.0;
+let speed = 1.0;
 yaw_light += speed;
 set_map_object("yaw_light", yaw_light.to_string());
 
