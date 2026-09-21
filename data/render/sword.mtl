@@ -1,0 +1,8 @@
+# Made in Blockbench 5.1.6
+newmtl m_09c46b01-eb73-998d-9a04-d68dfc4542b3
+map_Kd sword.png
+newmtl m_450da42b-caa7-0ed3-aa92-23a794ce10cf
+map_Kd sphere.png
+newmtl m_09db43be-f934-6b4c-132a-e50cc4a28073
+map_Kd behind_spheres.png
+newmtl none
