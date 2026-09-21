@@ -27,8 +27,8 @@ fn main() {
 
     let aperture_radius = radius.max(1e-3f32);
     let surface_radius = aperture_radius * 1.6f32;
-    let segments = 36usize;
-    let rings = 12usize;
+    let rings = 48usize;
+    let segments = 144usize;
     let ior = 1.5f32;
 
     let d = (surface_radius * surface_radius - aperture_radius * aperture_radius).max(0.0f32);
@@ -121,18 +121,19 @@ fn main() {
 
     let mut scene = avoengine::Static_scene.lock().unwrap();
 
-    scene.push(avoengine::Draw_components {
-        draw_type: "3d_object".to_string(),
-        draw_x: center[0],
-        draw_y: center[1],
-        draw_z: center[2],
-        draw_symbol: '.',
-        draw_vertices: vertices,
-        draw_RGBA_color: [200, 230, 255, 25],
-        draw_texture_path: "none".to_string(),
-        special_properties: format!("refraction {:.3}", ior),
-        draw_special_name: "convex_lens".to_string(),
-    });
+    // scene.push(avoengine::Draw_components {
+    //     draw_type: "3d_object".to_string(),
+    //     draw_x: center[0],
+    //     draw_y: center[1],
+    //     draw_z: center[2],
+    //     draw_symbol: '.',
+    //     draw_vertices: vertices,
+    //     draw_RGBA_color: [200, 230, 255, 25],
+    //     draw_texture_path: "none".to_string(),
+    //     draw_uv_path: "".to_string(),
+    //     special_properties: format!("refraction {:.3}", ior),
+    //     draw_special_name: "convex_lens".to_string(),
+    // });
 
     drop(scene);
 
@@ -180,19 +181,19 @@ fn main() {
 
             let mut camera = Camera.lock().unwrap();
 
-            avoengine::Light_queue.lock().unwrap().push(
-                        avoengine::Light_components{
-                            light_x: camera.camera_x.clone(),
-                            light_y: camera.camera_y.clone(),
-                            light_z: camera.camera_z.clone(),
-                            light_RGB_color: [255,255,255],
-                            light_distance: 580.0,
-                            light_cone_angle: 29.0,
-                            light_pitch: camera.camera_pitch.clone(),
-                            light_yaw: camera.camera_yaw.clone(),
-                            light_special_name: "none".to_string()
-                        }
-                    );
+            // avoengine::Light_queue.lock().unwrap().push(
+            //             avoengine::Light_components{
+            //                 light_x: camera.camera_x.clone(),
+            //                 light_y: camera.camera_y.clone(),
+            //                 light_z: camera.camera_z.clone(),
+            //                 light_RGB_color: [255,255,255],
+            //                 light_distance: 580.0,
+            //                 light_cone_angle: 29.0,
+            //                 light_pitch: camera.camera_pitch.clone(),
+            //                 light_yaw: camera.camera_yaw.clone(),
+            //                 light_special_name: "none".to_string()
+            //             }
+            //         );
             drop(camera);
 
             if current_tick != last_tick.try_into().unwrap(){
