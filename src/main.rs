@@ -140,11 +140,11 @@ fn main() {
     *avoengine::Is_scene_changed.lock().unwrap() = true;
 }
 
-    let (s_vertices, s_uvs, s_texture_path) = obj_loader::load_obj_and_texture("data/render");
+    let (s_vertices, s_uvs, s_texture_path, s_properties) = obj_loader::load_obj_and_texture("data/render");
 
     let obj_component = Draw_components {
         draw_type: "3d_object".to_string(),
-        draw_x: 0.0,
+        draw_x: 1.0,
         draw_y: 0.5,
         draw_z: 0.0,
         draw_symbol: '#',
@@ -152,10 +152,10 @@ fn main() {
         draw_RGBA_color: [255, 255, 255, 255],
         draw_texture_path: s_texture_path,
         draw_uvs: s_uvs,
-        pitch: 0.0,
+        pitch: 90.0,
         yaw: 0.0,
         roll: 0.0,
-        special_properties: "".to_string(),
+        special_properties: s_properties,
         draw_special_name: "".to_string()
     };
 
