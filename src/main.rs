@@ -20,6 +20,7 @@ fn main() {
     
     avoengine::maps::Load_map("data/default_map.txt".to_string());
     // avoengine::maps::Load_map("data/boos.txt".to_string());
+    avoengine::physics::init_physics(); 
 
     {
         let center = [5.0f32, 1.0, 5.0];
@@ -142,6 +143,74 @@ fn main() {
 
         drop(scene);
 
+        *avoengine::Is_scene_changed.lock().unwrap() = true;
+    }
+
+    {
+        use std::f32::consts::{PI, TAU};
+
+        let diameter = 0.29_f32;
+        let radius = diameter / 2.0;
+        let segments = 16; 
+        let rings = 8;     
+
+        let mut grid: Vec<[f32; 3]> = Vec::with_capacity((rings + 1) * (segments + 1));
+        let mut grid_uv: Vec<[f32; 2]> = Vec::with_capacity((rings + 1) * (segments + 1));
+        for i in 0..=rings {
+            let v = i as f32 / rings as f32;
+            let phi = v * PI;                
+            for j in 0..=segments {
+                let u = j as f32 / segments as f32;
+                let theta = u * TAU;         
+                let x = radius * phi.sin() * theta.cos();
+                let y = radius * phi.cos();
+                let z = radius * phi.sin() * theta.sin();
+                grid.push([x, y, z]);
+                grid_uv.push([u, 1.0 - v]);
+            }
+        }
+
+        let idx = |i: usize, j: usize| i * (segments + 1) + j;
+        let mut vertices: Vec<f32> = Vec::new();
+        let mut uvs: Vec<f32> = Vec::new();
+        for i in 0..rings {
+            for j in 0..segments {
+                let a = idx(i, j);
+                let b = idx(i + 1, j);
+                let c = idx(i + 1, j + 1);
+                let d = idx(i, j + 1);
+                for &(p, q, r) in &[(a, b, c), (a, c, d)] {
+                    vertices.extend_from_slice(&grid[p]);
+                    vertices.extend_from_slice(&grid[q]);
+                    vertices.extend_from_slice(&grid[r]);
+                    uvs.extend_from_slice(&grid_uv[p]);
+                    uvs.extend_from_slice(&grid_uv[q]);
+                    uvs.extend_from_slice(&grid_uv[r]);
+                }
+            }
+        }
+
+        let mut sphere = Draw_components {
+            draw_type: "3d_object".to_string(),
+            draw_x: 0.0,
+            draw_y: 5.0,
+            draw_z: 0.0,
+            draw_symbol: '#',
+            draw_vertices: vertices,
+            draw_RGBA_color: [255, 255, 255, 255],
+            draw_texture_path: String::new(),
+            draw_uvs: uvs,
+            properties: HashMap::new(),
+            draw_special_name: "sphere_0.29".to_string(),
+        };
+
+        sphere.properties.insert("has_gravity".to_string(), "1".to_string());
+        sphere.properties.insert("impact".to_string(), "1".to_string());
+        sphere.properties.insert("u".to_string(), "0.3".to_string());
+        sphere.properties.insert("bounce".to_string(), "1".to_string());
+        sphere.properties.insert("mass".to_string(), "0.5".to_string());
+
+        avoengine::Draw_queue.lock().unwrap().push(sphere);
         *avoengine::Is_scene_changed.lock().unwrap() = true;
     }
 
@@ -290,6 +359,9 @@ fn main() {
                 }
 
                 avoengine::maps::Do_all_scripts();
+
+                avoengine::physics::physics_step();
+
                 avoengine::console_rc_render::Render_image_to_console();
                 
                 let _ = window_processing::update_frame(&window);
