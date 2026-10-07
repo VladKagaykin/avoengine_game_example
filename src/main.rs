@@ -9,6 +9,35 @@ use winit::keyboard::PhysicalKey;
 use winit::event::ElementState;
 
 fn main() {
+    let _ = std::fs::create_dir_all("data");
+
+    if !std::path::Path::new("data/fps.txt").exists() {
+        let _ = std::fs::write(
+            "data/fps.txt",
+            "font {font}\ntext 0.0 0.0 0.5 0.2 255,255,255,255 {font_size} FPS: {fps}\n",
+        );
+    }
+
+    avoengine::gui::Page_elements.lock().unwrap().insert(
+        "font".to_string(),
+        "data/Trebuchet MS.ttf".to_string(),
+    );
+
+    avoengine::gui::Page_elements.lock().unwrap().insert(
+        "font_size".to_string(),
+        "64.0".to_string(),
+    );
+
+    avoengine::gui::Page_elements.lock().unwrap().insert(
+        "fps".to_string(),
+        "0".to_string(),
+    );
+
+    let mut fps_page = avoengine::gui::Load_gui_page("data/fps.txt")
+        .expect("failed to load data/fps.txt");
+
+    avoengine::gui::Update_gui_page(&mut fps_page);
+
     let (window, event_loop) = window_processing::create_window("avoengine".to_string());
     let settings = Engine_settings.lock().unwrap();
     Setup_window(&settings.window_width, &settings.window_height);
@@ -17,34 +46,26 @@ fn main() {
     avoengine::tick_system::Init_tick_system();
     avoengine::sound::Init_sound();
     avoengine::sound::Load_sound("data/voyager.wav");
-    
     avoengine::maps::Load_map("data/default_map.txt".to_string());
     // avoengine::maps::Load_map("data/boos.txt".to_string());
-    avoengine::physics::init_physics(); 
-
+    avoengine::physics::init_physics();
     {
         let center = [5.0f32, 1.0, 5.0];
         let yaw = 45.0f32;
         let radius = 1.0f32;
-
         let aperture_radius = radius.max(1e-3f32);
         let surface_radius = aperture_radius * 1.6f32;
         let rings = 48usize;
         let segments = 144usize;
         let ior = 1.5f32;
-
         let d = (surface_radius * surface_radius - aperture_radius * aperture_radius).max(0.0f32);
         let sagitta = surface_radius - d.sqrt();
-
         let mut front_rings: Vec<Vec<[f32; 3]>> = Vec::new();
-
         for i in 1..=rings {
             let rho = aperture_radius * (i as f32 / rings as f32);
             let d = (surface_radius * surface_radius - rho * rho).max(0.0f32);
             let z = sagitta - surface_radius + d.sqrt();
-
             let mut ring = Vec::with_capacity(segments);
-
             for j in 0..segments {
                 let theta = 2.0f32 * std::f32::consts::PI * (j as f32 / segments as f32);
                 ring.push([
@@ -53,76 +74,57 @@ fn main() {
                     z,
                 ]);
             }
-
             front_rings.push(ring);
         }
-
         let front_center = [0.0f32, 0.0f32, sagitta];
         let mut triangles: Vec<[[f32; 3]; 3]> = Vec::new();
-
         {
             let first = &front_rings[0];
-
             for j in 0..segments {
                 let j1 = (j + 1) % segments;
                 triangles.push([front_center, first[j], first[j1]]);
             }
         }
-
         for i in 1..rings {
             let inner = &front_rings[i - 1];
             let outer = &front_rings[i];
-
             for j in 0..segments {
                 let j1 = (j + 1) % segments;
-
                 triangles.push([inner[j], outer[j], outer[j1]]);
                 triangles.push([inner[j], outer[j1], inner[j1]]);
             }
         }
-
         let mut vertices: Vec<f32> = Vec::new();
-
         let rad = yaw * std::f32::consts::PI / 180.0f32;
         let syaw = rad.sin();
         let cyaw = rad.cos();
-
         for tri in triangles {
             let a = tri[0];
             let b = tri[1];
             let c = tri[2];
-
             let front = [a, b, c];
-
             for p in front.iter() {
                 let x = p[0] * cyaw + p[2] * syaw;
                 let y = p[1];
                 let z = -p[0] * syaw + p[2] * cyaw;
-
                 vertices.push(x);
                 vertices.push(y);
                 vertices.push(z);
             }
-
             let ma = [a[0], a[1], -a[2]];
             let mb = [b[0], b[1], -b[2]];
             let mc = [c[0], c[1], -c[2]];
-
             let back = [ma, mc, mb];
-
             for p in back.iter() {
                 let x = p[0] * cyaw + p[2] * syaw;
                 let y = p[1];
                 let z = -p[0] * syaw + p[2] * cyaw;
-
                 vertices.push(x);
                 vertices.push(y);
                 vertices.push(z);
             }
         }
-
         let mut scene = avoengine::Static_scene.lock().unwrap();
-
         // scene.push(avoengine::Draw_components {
         //     draw_type: "3d_object".to_string(),
         //     draw_x: center[0],
@@ -140,28 +142,23 @@ fn main() {
         //     },
         //     draw_special_name: "convex_lens".to_string(),
         // });
-
         drop(scene);
-
         *avoengine::Is_scene_changed.lock().unwrap() = true;
     }
-
     {
         use std::f32::consts::{PI, TAU};
-
         let diameter = 0.29_f32;
         let radius = diameter / 2.0;
-        let segments = 16; 
-        let rings = 8;     
-
+        let segments = 16;
+        let rings = 8;
         let mut grid: Vec<[f32; 3]> = Vec::with_capacity((rings + 1) * (segments + 1));
         let mut grid_uv: Vec<[f32; 2]> = Vec::with_capacity((rings + 1) * (segments + 1));
         for i in 0..=rings {
             let v = i as f32 / rings as f32;
-            let phi = v * PI;                
+            let phi = v * PI;
             for j in 0..=segments {
                 let u = j as f32 / segments as f32;
-                let theta = u * TAU;         
+                let theta = u * TAU;
                 let x = radius * phi.sin() * theta.cos();
                 let y = radius * phi.cos();
                 let z = radius * phi.sin() * theta.sin();
@@ -169,7 +166,6 @@ fn main() {
                 grid_uv.push([u, 1.0 - v]);
             }
         }
-
         let idx = |i: usize, j: usize| i * (segments + 1) + j;
         let mut vertices: Vec<f32> = Vec::new();
         let mut uvs: Vec<f32> = Vec::new();
@@ -189,7 +185,6 @@ fn main() {
                 }
             }
         }
-
         let mut sphere = Draw_components {
             draw_type: "3d_object".to_string(),
             draw_x: 0.0,
@@ -203,25 +198,20 @@ fn main() {
             properties: HashMap::new(),
             draw_special_name: "sphere_0.29".to_string(),
         };
-
         sphere.properties.insert("has_gravity".to_string(), "1".to_string());
         sphere.properties.insert("impact".to_string(), "1".to_string());
         sphere.properties.insert("u".to_string(), "0.3".to_string());
         sphere.properties.insert("bounce".to_string(), "1".to_string());
         sphere.properties.insert("mass".to_string(), "0.5".to_string());
-
         avoengine::Draw_queue.lock().unwrap().push(sphere);
         *avoengine::Is_scene_changed.lock().unwrap() = true;
     }
-
     let (s_vertices, s_uvs, s_texture_path, s_properties) = obj_loader::load_obj_and_texture("data/render");
-
     let mut properties = HashMap::new();
     properties.insert("pitch".to_string(), "90.0".to_string());
     properties.insert("yaw".to_string(), "0.0".to_string());
     properties.insert("roll".to_string(), "0.0".to_string());
     properties.insert("special_properties".to_string(), s_properties);
-
     let obj_component = Draw_components {
         draw_type: "3d_object".to_string(),
         draw_x: 1.0,
@@ -235,17 +225,20 @@ fn main() {
         properties,
         draw_special_name: "".to_string(),
     };
-
     Static_scene.lock().unwrap().push(obj_component);
-    *Is_scene_changed.lock().unwrap() = true;    
+    *Is_scene_changed.lock().unwrap() = true;
 
     let mut camera_speed: f32 = 0.58;
-    let mut camera_angle_speed: f32 = 5.8; 
+    let mut camera_angle_speed: f32 = 5.8;
     let mut last_tick: u128 = 0;
-    
+
+    let mut fps_value: u32 = 0;
+    let mut fps_frame_count: u32 = 0;
+    let mut fps_last_time = Instant::now();
+    let mut last_fps_shown: u32 = 0;
+
     event_loop.run(move |event, target| {
         target.set_control_flow(ControlFlow::Poll);
-        
         match event {
             Event::WindowEvent {
                 event: window_event,
@@ -257,7 +250,6 @@ fn main() {
                         avoengine::window_processing::update_key_state(key_code, pressed);
                     }
                 }
-                
                 match window_event {
                     WindowEvent::KeyboardInput { event: key_event, .. } => {
                         if let PhysicalKey::Code(key_code) = key_event.physical_key {
@@ -274,11 +266,8 @@ fn main() {
             Event::AboutToWait => {
                 avoengine::tick_system::Tick_update();
                 let current_tick = avoengine::tick_system::Get_tick();
-
                 let keys = avoengine::window_processing::get_pressed_keys(&window);
-
                 let mut camera = Camera.lock().unwrap();
-
                 // avoengine::Light_queue.lock().unwrap().push(
                 //             avoengine::Light_components{
                 //                 light_x: camera.camera_x.clone(),
@@ -293,14 +282,10 @@ fn main() {
                 //             }
                 //         );
                 drop(camera);
-
                 if current_tick != last_tick {
-
                     {
                         let mut camera = Camera.lock().unwrap();
-
                         let mut play_sound_3d = false;
-                        
                         for key in &keys {
                             match key {
                                 KeyCode::KeyI => camera.camera_pitch += camera_angle_speed,
@@ -347,9 +332,7 @@ fn main() {
                                 _ => {}
                             }
                         }
-                        
                         drop(camera);
-                        
                         if play_sound_3d {
                             avoengine::sound::Play_sound_3d(0.0, 1.0, 0.0, "data/voyager.wav", 1.0);
                         }
@@ -357,13 +340,32 @@ fn main() {
                     last_tick = current_tick;
                     // avoengine::maps::Do_all_scripts();
                 }
-
                 avoengine::maps::Do_all_scripts();
-
                 avoengine::physics::physics_step();
-
                 avoengine::console_rc_render::Render_image_to_console();
-                
+
+                fps_frame_count += 1;
+                let fps_now = Instant::now();
+                let fps_elapsed = fps_now.duration_since(fps_last_time);
+
+                if fps_elapsed >= Duration::from_secs(1) {
+                    fps_value = (fps_frame_count as f64 / fps_elapsed.as_secs_f64()).round() as u32;
+                    fps_frame_count = 0;
+                    fps_last_time = fps_now;
+                }
+
+                if fps_value != last_fps_shown {
+                    avoengine::gui::Page_elements.lock().unwrap().insert(
+                        "fps".to_string(),
+                        fps_value.to_string(),
+                    );
+
+                    avoengine::gui::Update_gui_page(&mut fps_page);
+                    last_fps_shown = fps_value;
+                }
+
+                avoengine::gui::Overlay_gui_page(&fps_page, false);
+
                 let _ = window_processing::update_frame(&window);
             }
             _ => {}
