@@ -1,9 +1,9 @@
 // Map_objects
 "yaw_light" = "0.0"
-"rotation_speed" = "1.0"
+"rotation_speed" = "10.0"
 "cube_angle" = "0.0"
 // Static_scene
-Draw_components("2d_object", 58, 58, 0, '#', [58.0, 58.0, 58.0, -58.0, -58.0, -58.0, -58.0, 58.0], [255, 255, 255, 255], "avoengine_rust/src/logo.png", [], "impact:1,u:0.5,bounce:0.2", "")
+Draw_components("2d_object", 58, 58, 0, '#', [58.0, 58.0, 58.0, -58.0, -58.0, -58.0, -58.0, 58.0], [255, 255, 255, 0], "avoengine_rust/src/logo.png", [], "impact:1,u:0.5,bounce:0.2", "")
 Draw_components("3d_object", -10, 0, -10, '█', [1.0, 0.0, 1.0, 1.0, 0.0, -1.0, -1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0, 1.0], [58, 58, 58, 255], "", [], "impact:1,u:0.5,bounce:0.2", "")
 Draw_components("3d_object", -10, 0, -8, '█', [1.0, 0.0, 1.0, 1.0, 0.0, -1.0, -1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0, 1.0], [3, 78, 37, 255], "", [], "impact:1,u:0.5,bounce:0.2", "")
 Draw_components("3d_object", -10, 0, -6, '█', [1.0, 0.0, 1.0, 1.0, 0.0, -1.0, -1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0, 1.0], [58, 58, 58, 255], "", [], "impact:1,u:0.5,bounce:0.2", "")
@@ -174,7 +174,7 @@ cube,
 0.0,
 cube_angle,
 0.0,
-\"impact:1,u:0.5,bounce:0.2\",
+\"impact:0,u:0.5,bounce:0.2,has_gravity:1\",
 \"green_cube\"
 ));
 }
