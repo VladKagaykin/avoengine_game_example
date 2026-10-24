@@ -1,1 +1,9 @@
-text 0.0 0.0 0.3 0.08 255,255,255,255 0.05 FPS: {fps}
+font {font}
+text 0.0 0.0 0.5 0.2 255,255,255,255 {font_size} FPS: {fps}
+text 0.0 0.1 0.5 0.2 255,255,255,255 {font_size} tick: {prof_tick} ms
+text 0.0 0.2 0.5 0.2 255,255,255,255 {font_size} scripts: {prof_scripts} ms
+text 0.0 0.3 0.5 0.2 255,255,255,255 {font_size} physics: {prof_physics} ms
+text 0.0 0.4 0.5 0.2 255,255,255,255 {font_size} render: {prof_render} ms
+text 0.0 0.5 0.5 0.2 255,255,255,255 {font_size} gui_update: {prof_gui_update} ms
+text 0.0 0.6 0.5 0.2 255,255,255,255 {font_size} gui_overlay: {prof_gui_overlay} ms
+text 0.0 0.7 0.5 0.2 255,255,255,255 {font_size} frame_update: {prof_frame_update} ms
