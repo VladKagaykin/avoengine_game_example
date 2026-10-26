@@ -80,17 +80,58 @@ fn main() {
     let mut frame_count: u32 = 0;
     let mut last_time = Instant::now();
 
+    let mut uzhas = true;
+
     loop {
         {
             let mut cam = Camera.lock().unwrap();
+            let keys = avoengine::window::Get_pressed_keys();
 
-            cam.camera_x   = 0.0;
-            cam.camera_y   = 1.0;
-            cam.camera_z   = 0.0;
+            let speed = 0.2;
+            let rot_speed = 2.0;
+            let yaw_rad = cam.camera_yaw.to_radians();
+            let pitch_rad = cam.camera_pitch.to_radians();
 
-            cam.camera_yaw   += 0.58;
-            cam.camera_pitch = -30.0;
-            cam.camera_roll  = 0.0;
+            let fwd_x = pitch_rad.cos() * yaw_rad.sin();
+            let fwd_y = pitch_rad.sin();
+            let fwd_z = pitch_rad.cos() * yaw_rad.cos();
+            let right_x = yaw_rad.cos();
+            let right_z = -yaw_rad.sin();
+
+            for key in &keys {
+                match *key {
+                    26 => {
+                        cam.camera_x += fwd_x * speed;
+                        cam.camera_y += fwd_y * speed;
+                        cam.camera_z += fwd_z * speed;
+                    }
+                    22 => {
+                        cam.camera_x -= fwd_x * speed;
+                        cam.camera_y -= fwd_y * speed;
+                        cam.camera_z -= fwd_z * speed;
+                    }
+                    4 => {
+                        cam.camera_x -= right_x * speed;
+                        cam.camera_z -= right_z * speed;
+                    }
+                    7 => {
+                        cam.camera_x += right_x * speed;
+                        cam.camera_z += right_z * speed;
+                    }
+                    82 => {
+                        cam.camera_pitch += rot_speed;
+                        if cam.camera_pitch > 89.0 { cam.camera_pitch = 89.0; }
+                    }
+                    81 => {
+                        cam.camera_pitch -= rot_speed;
+                        if cam.camera_pitch < -89.0 { cam.camera_pitch = -89.0; }
+                    }
+                    80 => { cam.camera_yaw -= rot_speed; }
+                    79 => { cam.camera_yaw += rot_speed; }
+                    20 => { uzhas = false; }
+                    _ => {}
+                }
+            }
         }
         avoengine::render::Render_frame();
         window::Update_frame();
@@ -103,5 +144,10 @@ fn main() {
             frame_count = 0;
             last_time = Instant::now();
         }
+        if !uzhas {
+            break;
+        }
     }
+
+    println!("Hello, world!");
 }
