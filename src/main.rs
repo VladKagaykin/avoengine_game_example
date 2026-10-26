@@ -2,6 +2,106 @@ use avoengine::*;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
+fn sub(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+    [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+}
+fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+    [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    ]
+}
+
+fn ray_tri(
+    origin: [f32; 3],
+    dir: [f32; 3],
+    v0: [f32; 3],
+    v1: [f32; 3],
+    v2: [f32; 3],
+) -> Option<f32> {
+    let e1 = sub(v1, v0);
+    let e2 = sub(v2, v0);
+    let h = cross(dir, e2);
+    let a = dot(e1, h);
+    if a.abs() < 1e-8 {
+        return None;
+    }
+    let f = 1.0 / a;
+    let s = sub(origin, v0);
+    let u = f * dot(s, h);
+    if !(0.0..=1.0).contains(&u) {
+        return None;
+    }
+    let q = cross(s, e1);
+    let v = f * dot(dir, q);
+    if v < 0.0 || u + v > 1.0 {
+        return None;
+    }
+    let t = f * dot(e2, q);
+    if t > 1e-4 { Some(t) } else { None }
+}
+
+fn raycast_scene(origin: [f32; 3], dir: [f32; 3]) -> Option<[f32; 3]> {
+    let scene = avoengine::Static_scene.lock().unwrap();
+    let mut best_t = f32::INFINITY;
+    let mut best_tri: Option<([f32; 3], [f32; 3], [f32; 3])> = None;
+
+    for obj in scene.iter() {
+        let n = obj.vertices.len();
+        let mut i = 0;
+        while i + 8 < n {
+            let v0 = [
+                obj.vertices[i]     + obj.x,
+                obj.vertices[i + 1] + obj.y,
+                obj.vertices[i + 2] + obj.z,
+            ];
+            let v1 = [
+                obj.vertices[i + 3] + obj.x,
+                obj.vertices[i + 4] + obj.y,
+                obj.vertices[i + 5] + obj.z,
+            ];
+            let v2 = [
+                obj.vertices[i + 6] + obj.x,
+                obj.vertices[i + 7] + obj.y,
+                obj.vertices[i + 8] + obj.z,
+            ];
+            if let Some(t) = ray_tri(origin, dir, v0, v1, v2) {
+                if t < best_t {
+                    best_t = t;
+                    best_tri = Some((v0, v1, v2));
+                }
+            }
+            i += 9;
+        }
+    }
+
+    let (v0, v1, v2) = best_tri?;
+
+    let hp = [
+        origin[0] + dir[0] * best_t,
+        origin[1] + dir[1] * best_t,
+        origin[2] + dir[2] * best_t,
+    ];
+
+    let c = [
+        (v0[0] + v1[0] + v2[0]) / 3.0,
+        (v0[1] + v1[1] + v2[1]) / 3.0,
+        (v0[2] + v1[2] + v2[2]) / 3.0,
+    ];
+    let d = sub(c, hp);
+    let dl = (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt();
+    if dl > 1e-6 {
+        let k = 0.01 / dl;
+        Some([hp[0] + d[0] * k, hp[1] + d[1] * k, hp[2] + d[2] * k])
+    } else {
+        Some(hp)
+    }
+}
+
 fn main() {
     avoengine::Engine_setup();
 
@@ -95,11 +195,13 @@ fn main() {
     let mut frame_count: u32 = 0;
     let mut last_time = Instant::now();
     let mut uzhas = true;
+    let mut t_was_pressed = false;
 
     loop {
+        let keys = avoengine::window::Get_pressed_keys();
+
         {
             let mut cam = Camera.lock().unwrap();
-            let keys = avoengine::window::Get_pressed_keys();
 
             let speed = 0.2;
             let rot_speed = 2.0;
@@ -141,6 +243,35 @@ fn main() {
                 }
             }
         }
+
+        let t_pressed = keys.iter().any(|k| *k == 23);
+        if t_pressed && !t_was_pressed {
+            let (position, forward) = {
+                let cam = Camera.lock().unwrap();
+                let yaw = cam.camera_yaw.to_radians();
+                let pitch = cam.camera_pitch.to_radians();
+                (
+                    [cam.camera_x, cam.camera_y, cam.camera_z],
+                    [
+                        pitch.cos() * yaw.sin(),
+                        pitch.sin(),
+                        pitch.cos() * yaw.cos(),
+                    ],
+                )
+            };
+
+            match raycast_scene(position, forward) {
+                Some(hit) => {
+                    avoengine::render::Add_spray(
+                        "avoengine_rust/src/logo.png".to_string(),
+                        hit,
+                        [255, 255, 255, 255],
+                    );
+                }
+                None => println!("[game spray] Raycast missed"),
+            }
+        }
+        t_was_pressed = t_pressed;
 
         avoengine::render::Render_frame();
         window::Update_frame();
