@@ -75,11 +75,25 @@ fn main() {
 
     drop(scene);
 
+    avoengine::gui::GUI_SCENE.lock().unwrap().push(
+        avoengine::gui::GuiElement::Text {
+            template: "FPS: {fps}".to_string(),
+            color: [255, 255, 255, 255],
+            font: "proportional".to_string(),
+            size: 20.0,
+            anchor: avoengine::gui::Anchor::TopLeft,
+            offset: (10.0, 10.0),
+        },
+    );
+    avoengine::gui::GUI_OBJECTS
+        .lock()
+        .unwrap()
+        .insert("fps".to_string(), "0.00".to_string());
+
     avoengine::render::Bake_static_scene();
 
     let mut frame_count: u32 = 0;
     let mut last_time = Instant::now();
-
     let mut uzhas = true;
 
     loop {
@@ -118,14 +132,8 @@ fn main() {
                         cam.camera_x += right_x * speed;
                         cam.camera_z += right_z * speed;
                     }
-                    82 => {
-                        cam.camera_pitch += rot_speed;
-                        if cam.camera_pitch > 89.0 { cam.camera_pitch = 89.0; }
-                    }
-                    81 => {
-                        cam.camera_pitch -= rot_speed;
-                        if cam.camera_pitch < -89.0 { cam.camera_pitch = -89.0; }
-                    }
+                    82 => { cam.camera_pitch += rot_speed; }
+                    81 => { cam.camera_pitch -= rot_speed; }
                     80 => { cam.camera_yaw -= rot_speed; }
                     79 => { cam.camera_yaw += rot_speed; }
                     20 => { uzhas = false; }
@@ -133,6 +141,7 @@ fn main() {
                 }
             }
         }
+
         avoengine::render::Render_frame();
         window::Update_frame();
 
@@ -140,10 +149,15 @@ fn main() {
         let elapsed = last_time.elapsed();
         if elapsed >= Duration::from_millis(1000) {
             let fps = frame_count as f64 / elapsed.as_secs_f64();
-            println!("FPS: {:.2}", fps);
+            // println!("FPS: {:.2}", fps);
+            avoengine::gui::GUI_OBJECTS
+                .lock()
+                .unwrap()
+                .insert("fps".to_string(), format!("{:.2}", fps));
             frame_count = 0;
             last_time = Instant::now();
         }
+
         if !uzhas {
             break;
         }
