@@ -45,60 +45,78 @@ fn ray_tri(
     if t > 1e-4 { Some(t) } else { None }
 }
 
-fn raycast_scene(origin: [f32; 3], dir: [f32; 3]) -> Option<[f32; 3]> {
-    let scene = avoengine::Static_scene.lock().unwrap();
-    let mut best_t = f32::INFINITY;
-    let mut best_tri: Option<([f32; 3], [f32; 3], [f32; 3])> = None;
+fn raycast_scene(origin: [f32; 3], dir: [f32; 3]) -> Option<([f32; 3], [f32; 3])> {
+    let static_result: Option<(f32, [f32; 3], [f32; 3])> = {
+        let scene = avoengine::Static_scene.lock().unwrap();
+        let mut best_t = f32::INFINITY;
+        let mut best_hit: Option<([f32; 3], [f32; 3])> = None;
 
-    for obj in scene.iter() {
-        let n = obj.vertices.len();
-        let mut i = 0;
-        while i + 8 < n {
-            let v0 = [
-                obj.vertices[i]     + obj.x,
-                obj.vertices[i + 1] + obj.y,
-                obj.vertices[i + 2] + obj.z,
-            ];
-            let v1 = [
-                obj.vertices[i + 3] + obj.x,
-                obj.vertices[i + 4] + obj.y,
-                obj.vertices[i + 5] + obj.z,
-            ];
-            let v2 = [
-                obj.vertices[i + 6] + obj.x,
-                obj.vertices[i + 7] + obj.y,
-                obj.vertices[i + 8] + obj.z,
-            ];
-            if let Some(t) = ray_tri(origin, dir, v0, v1, v2) {
-                if t < best_t {
-                    best_t = t;
-                    best_tri = Some((v0, v1, v2));
+        for obj in scene.iter() {
+            let n = obj.vertices.len();
+            let mut i = 0;
+            while i + 8 < n {
+                let v0 = [
+                    obj.vertices[i]     + obj.x,
+                    obj.vertices[i + 1] + obj.y,
+                    obj.vertices[i + 2] + obj.z,
+                ];
+                let v1 = [
+                    obj.vertices[i + 3] + obj.x,
+                    obj.vertices[i + 4] + obj.y,
+                    obj.vertices[i + 5] + obj.z,
+                ];
+                let v2 = [
+                    obj.vertices[i + 6] + obj.x,
+                    obj.vertices[i + 7] + obj.y,
+                    obj.vertices[i + 8] + obj.z,
+                ];
+                if let Some(t) = ray_tri(origin, dir, v0, v1, v2) {
+                    if t < best_t {
+                        best_t = t;
+                        let e1 = sub(v1, v0);
+                        let e2 = sub(v2, v0);
+                        let nrm = cross(e1, e2);
+                        let len = (nrm[0]*nrm[0] + nrm[1]*nrm[1] + nrm[2]*nrm[2]).sqrt();
+                        let normal = if len > 1e-8 {
+                            [nrm[0]/len, nrm[1]/len, nrm[2]/len]
+                        } else {
+                            [0.0, 1.0, 0.0]
+                        };
+                        let hp = [
+                            origin[0] + dir[0]*t,
+                            origin[1] + dir[1]*t,
+                            origin[2] + dir[2]*t,
+                        ];
+                        best_hit = Some((hp, normal));
+                    }
                 }
+                i += 9;
             }
-            i += 9;
         }
+
+        best_hit.map(|(p, n)| (best_t, p, n))
+    };
+
+    let dynamic_result = avoengine::render::Raycast_dynamic(origin, dir);
+
+    match (static_result, dynamic_result) {
+        (Some((st, sp, sn)), Some((dt, dp, dn))) => {
+            if st <= dt { Some((sp, sn)) } else { Some((dp, dn)) }
+        }
+        (Some((_, sp, sn)), None) => Some((sp, sn)),
+        (None, Some((_, dp, dn))) => Some((dp, dn)),
+        (None, None) => None,
     }
+}
 
-    let (v0, v1, v2) = best_tri?;
-
-    let hp = [
-        origin[0] + dir[0] * best_t,
-        origin[1] + dir[1] * best_t,
-        origin[2] + dir[2] * best_t,
-    ];
-
-    let c = [
-        (v0[0] + v1[0] + v2[0]) / 3.0,
-        (v0[1] + v1[1] + v2[1]) / 3.0,
-        (v0[2] + v1[2] + v2[2]) / 3.0,
-    ];
-    let d = sub(c, hp);
+fn offset_toward_triangle(hit: [f32; 3], tri_centroid: [f32; 3]) -> [f32; 3] {
+    let d = sub(tri_centroid, hit);
     let dl = (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt();
     if dl > 1e-6 {
         let k = 0.01 / dl;
-        Some([hp[0] + d[0] * k, hp[1] + d[1] * k, hp[2] + d[2] * k])
+        [hit[0] + d[0] * k, hit[1] + d[1] * k, hit[2] + d[2] * k]
     } else {
-        Some(hp)
+        hit
     }
 }
 
@@ -175,6 +193,20 @@ fn main() {
 
     drop(scene);
 
+    match avoengine::gltf_parser::Import_gltf("data/mark(27_10_2026).gltf".to_string()) {
+        Some(import) => {
+            let mut dyn_obj = avoengine::render::Dynamic_components::new("mark".to_string());
+            dyn_obj.x = 15.0;
+            dyn_obj.y = 1.0;
+            dyn_obj.z = 0.0;
+            dyn_obj.Load_from_import(&import);
+            dyn_obj.Set_default_animation("standart".to_string());
+            avoengine::render::Draw_queue.lock().unwrap().push(dyn_obj);
+            println!("[game] Imported model 'mark'");
+        }
+        None => println!("[game] Failed to import model data/mark(27_10_2026).gltf"),
+    }
+
     avoengine::gui::GUI_SCENE.lock().unwrap().push(
         avoengine::gui::GuiElement::Text {
             template: "FPS: {fps}".to_string(),
@@ -196,6 +228,7 @@ fn main() {
     let mut last_time = Instant::now();
     let mut uzhas = true;
     let mut t_was_pressed = false;
+    let mut h_was_pressed = false;
 
     let mut last_tick: u128 = 0;
     let mut current_tick: u128 = avoengine::tick_system::Get_current_tick();
@@ -250,8 +283,6 @@ fn main() {
             last_tick = current_tick;
         }
 
-        
-
         let t_pressed = keys.iter().any(|k| *k == 23);
         if t_pressed && !t_was_pressed {
             let (position, forward) = {
@@ -269,10 +300,12 @@ fn main() {
             };
 
             match raycast_scene(position, forward) {
-                Some(hit) => {
-                    avoengine::render::Add_spray(
+                Some((hit, normal)) => {
+                    let hit = offset_toward_triangle(hit, [hit[0] - normal[0], hit[1] - normal[1], hit[2] - normal[2]]);
+                    avoengine::render::Add_spray_at(
                         "avoengine_rust/src/logo.png".to_string(),
                         hit,
+                        normal,
                         [255, 255, 255, 255],
                     );
                 }
@@ -281,6 +314,15 @@ fn main() {
         }
         t_was_pressed = t_pressed;
 
+        let h_pressed = keys.iter().any(|k| *k == 11);
+        if h_pressed && !h_was_pressed {
+            let mut queue = avoengine::render::Draw_queue.lock().unwrap();
+            if let Some(obj) = queue.iter_mut().find(|o| o.special_name == "mark") {
+                obj.Play_animation("head".to_string());
+            }
+        }
+        h_was_pressed = h_pressed;
+
         avoengine::render::Render_frame();
         window::Update_frame();
 
@@ -288,7 +330,6 @@ fn main() {
         let elapsed = last_time.elapsed();
         if elapsed >= Duration::from_millis(1000) {
             let fps = frame_count as f64 / elapsed.as_secs_f64();
-            // println!("FPS: {:.2}", fps);
             avoengine::gui::GUI_OBJECTS
                 .lock()
                 .unwrap()
