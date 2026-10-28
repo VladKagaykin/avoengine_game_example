@@ -120,6 +120,11 @@ fn offset_toward_triangle(hit: [f32; 3], tri_centroid: [f32; 3]) -> [f32; 3] {
     }
 }
 
+const PLAYER_NAME: &str = "__player";
+const PLAYER_HEIGHT: f32 = 1.5;
+const WALK_FORCE: f32 = 3.75;
+const JUMP_FORCE: f32 = 7.5;
+
 fn main() {
     avoengine::Engine_setup();
 
@@ -131,28 +136,6 @@ fn main() {
         -1.0, 0.0, -1.0,
         -1.0, 0.0,  1.0,
     ];
-
-    let mut scene = avoengine::Static_scene.lock().unwrap();
-    for x in (-10..=8).step_by(2) {
-        for z in (-10..=8).step_by(2) {
-            let ix = (x + 10) / 2;
-            let iz = (z + 10) / 2;
-            let color = if (ix + iz) % 2 == 0 {
-                [58u8, 58, 58, 255]
-            } else {
-                [3u8, 78, 37, 255]
-            };
-            scene.push(avoengine::Draw_components {
-                x: x as f32,
-                y: 0.0,
-                z: z as f32,
-                vertices: tile_vertices.clone(),
-                RGBA_color: color,
-                properties: std::collections::HashMap::new(),
-                special_name: String::new(),
-            });
-        }
-    }
 
     let cube_vertices: Vec<f32> = vec![
         -1.0, -1.0,  1.0,   1.0, -1.0,  1.0,   1.0,  1.0,  1.0,
@@ -169,29 +152,84 @@ fn main() {
         -1.0, -1.0, -1.0,   1.0, -1.0,  1.0,  -1.0, -1.0,  1.0,
     ];
 
-    scene.push(avoengine::Draw_components {
-        x: 7.0, y: 1.01, z: 7.0,
-        vertices: cube_vertices.clone(),
-        RGBA_color: [255, 0, 0, 255],
-        properties: std::collections::HashMap::new(),
-        special_name: String::new(),
-    });
-    scene.push(avoengine::Draw_components {
-        x: -9.0, y: 1.01, z: -9.0,
-        vertices: cube_vertices.clone(),
-        RGBA_color: [0, 0, 255, 255],
-        properties: std::collections::HashMap::new(),
-        special_name: String::new(),
-    });
-    scene.push(avoengine::Draw_components {
-        x: -5.0, y: 1.01, z: 5.0,
-        vertices: cube_vertices.clone(),
-        RGBA_color: [255, 0, 255, 128],
-        properties: std::collections::HashMap::new(),
-        special_name: String::new(),
-    });
+    {
+        let mut scene = avoengine::Static_scene.lock().unwrap();
+        for x in (-10..=10).step_by(2) {
+            for z in (-10..=10).step_by(2) {
+                let ix = (x + 10) / 2;
+                let iz = (z + 10) / 2;
+                let color = if (ix + iz) % 2 == 0 {
+                    [58u8, 58, 58, 255]
+                } else {
+                    [3u8, 78, 37, 255]
+                };
+                scene.push(avoengine::Draw_components {
+                    x: x as f32,
+                    y: 0.0,
+                    z: z as f32,
+                    vertices: tile_vertices.clone(),
+                    RGBA_color: color,
+                    properties: HashMap::new(),
+                    special_name: String::new(),
+                });
+            }
+        }
+        scene.push(avoengine::Draw_components {
+            x: 7.0, y: 1.1, z: 7.0,
+            vertices: cube_vertices.clone(),
+            RGBA_color: [255, 0, 0, 255],
+            properties: HashMap::new(),
+            special_name: String::new(),
+        });
+        scene.push(avoengine::Draw_components {
+            x: -9.0, y: 1.1, z: -9.0,
+            vertices: cube_vertices.clone(),
+            RGBA_color: [0, 0, 255, 255],
+            properties: HashMap::new(),
+            special_name: String::new(),
+        });
+        scene.push(avoengine::Draw_components {
+            x: -5.0, y: 1.1, z: 5.0,
+            vertices: cube_vertices.clone(),
+            RGBA_color: [255, 0, 255, 128],
+            properties: HashMap::new(),
+            special_name: String::new(),
+        });
+    }
 
-    drop(scene);
+    {
+        let mut physics = avoengine::Physics_scene.lock().unwrap();
+        let mut floor_props = HashMap::new();
+        floor_props.insert("collision".to_string(), "1".to_string());
+        floor_props.insert("resistance".to_string(), "1".to_string());
+        physics.push(avoengine::Physics_components {
+            x: 0.0, y: 0.0, z: 0.0,
+            vertices: vec![
+                 10.0, 0.0,  10.0,
+                 10.0, 0.0, -10.0,
+                -10.0, 0.0, -10.0,
+                 10.0, 0.0,  10.0,
+                -10.0, 0.0, -10.0,
+                -10.0, 0.0,  10.0,
+            ],
+            properties: floor_props,
+            special_name: "floor".to_string(),
+        });
+        for (px, py, pz, name) in [
+            (7.0f32, 1.0f32, 7.0f32, "cube_red"),
+            (-9.0, 1.0, -9.0, "cube_blue"),
+            (-5.0, 1.0, 5.0, "cube_magenta"),
+        ] {
+            let mut props = HashMap::new();
+            props.insert("collision".to_string(), "1".to_string());
+            physics.push(avoengine::Physics_components {
+                x: px, y: py, z: pz,
+                vertices: cube_vertices.clone(),
+                properties: props,
+                special_name: name.to_string(),
+            });
+        }
+    }
 
     match avoengine::gltf_parser::Import_gltf("data/mark(27_10_2026).gltf".to_string()) {
         Some(import) => {
@@ -223,70 +261,172 @@ fn main() {
         .insert("fps".to_string(), "0.00".to_string());
 
     avoengine::render::Bake_static_scene();
+    avoengine::physics::Bake_physics_scene();
 
     avoengine::window::Mouse_capture();
 
+    {
+        let mut player = avoengine::physics::Dynamic_physics_components::new(PLAYER_NAME.to_string());
+        player.x = 0.0;
+        player.y = 5.0;
+        player.z = 0.0;
+        player.properties.insert("collision".to_string(), "1".to_string());
+        player.properties.insert("has_gravity".to_string(), "1".to_string());
+        player.properties.insert("resistance".to_string(), "0.5".to_string());
+        avoengine::physics::Physics_queue.lock().unwrap().push(player);
+    }
+
+    {
+        let mut cam = Camera.lock().unwrap();
+        cam.camera_x = 0.0;
+        cam.camera_y = 5.0 + PLAYER_HEIGHT;
+        cam.camera_z = 0.0;
+    }
+
     let mut frame_count: u32 = 0;
     let mut last_time = Instant::now();
-    let mut uzhas = true;
+    let mut running = true;
+    let mut noclip = true;
+    let mut lmb_was_pressed = false;
+    let mut last_tick = avoengine::tick_system::Get_current_tick();
     let mut t_was_pressed = false;
     let mut h_was_pressed = false;
-
 
     loop {
         let keys = avoengine::window::Get_pressed_keys();
         let mouse = avoengine::window::Get_mouse();
 
+        if keys.iter().any(|k| *k == 20) {
+            running = false;
+        }
+
         {
             let mut cam = Camera.lock().unwrap();
             let sens = 0.15;
             cam.camera_yaw += mouse[2] as f32 * sens;
-            cam.camera_pitch = (cam.camera_pitch - mouse[3] as f32 * sens).clamp(-89.0, 89.0);
+            cam.camera_pitch -= mouse[3] as f32 * sens;
         }
 
-            {
-                let mut cam = Camera.lock().unwrap();
+        {
+            let rot_speed = 5.8;
+            let mut cam = Camera.lock().unwrap();
+            for key in &keys {
+                match *key {
+                    82 => cam.camera_pitch += rot_speed,
+                    81 => cam.camera_pitch -= rot_speed,
+                    80 => cam.camera_yaw -= rot_speed,
+                    79 => cam.camera_yaw += rot_speed,
+                    _ => {}
+                }
+            }
+        }
 
+        let lmb_pressed = (mouse[4] & 1) != 0;
+        if lmb_pressed && !lmb_was_pressed {
+            noclip = !noclip;
+            let cam_pos = {
+                let cam = Camera.lock().unwrap();
+                [cam.camera_x, cam.camera_y, cam.camera_z]
+            };
+            let mut q = avoengine::physics::Physics_queue.lock().unwrap();
+            if let Some(player) = q.iter_mut().find(|p| p.special_name == PLAYER_NAME) {
+                if noclip {
+                    player.properties.insert("collision".to_string(), "0".to_string());
+                    player.properties.insert("has_gravity".to_string(), "0".to_string());
+                    player.Clear_forces();
+                    player.x = cam_pos[0];
+                    player.y = cam_pos[1] - PLAYER_HEIGHT;
+                    player.z = cam_pos[2];
+                } else {
+                    player.properties.insert("collision".to_string(), "1".to_string());
+                    player.properties.insert("has_gravity".to_string(), "1".to_string());
+                    player.Clear_forces();
+                }
+            }
+        }
+        lmb_was_pressed = lmb_pressed;
+
+        if noclip {
+            let (cx, cy, cz) = {
+                let mut cam = Camera.lock().unwrap();
                 let speed = 0.58;
-                let rot_speed = 5.8;
                 let yaw_rad = cam.camera_yaw.to_radians();
                 let pitch_rad = cam.camera_pitch.to_radians();
-
                 let fwd_x = pitch_rad.cos() * yaw_rad.sin();
                 let fwd_y = pitch_rad.sin();
                 let fwd_z = pitch_rad.cos() * yaw_rad.cos();
                 let right_x = yaw_rad.cos();
                 let right_z = -yaw_rad.sin();
-
                 for key in &keys {
                     match *key {
-                        26 => {
-                            cam.camera_x += fwd_x * speed;
-                            cam.camera_y += fwd_y * speed;
-                            cam.camera_z += fwd_z * speed;
-                        }
-                        22 => {
-                            cam.camera_x -= fwd_x * speed;
-                            cam.camera_y -= fwd_y * speed;
-                            cam.camera_z -= fwd_z * speed;
-                        }
-                        4 => {
-                            cam.camera_x -= right_x * speed;
-                            cam.camera_z -= right_z * speed;
-                        }
-                        7 => {
-                            cam.camera_x += right_x * speed;
-                            cam.camera_z += right_z * speed;
-                        }
-                        82 => { cam.camera_pitch += rot_speed; }
-                        81 => { cam.camera_pitch -= rot_speed; }
-                        80 => { cam.camera_yaw -= rot_speed; }
-                        79 => { cam.camera_yaw += rot_speed; }
-                        20 => { uzhas = false; }
+                        26 => { cam.camera_x += fwd_x * speed; cam.camera_y += fwd_y * speed; cam.camera_z += fwd_z * speed; }
+                        22 => { cam.camera_x -= fwd_x * speed; cam.camera_y -= fwd_y * speed; cam.camera_z -= fwd_z * speed; }
+                        4 => { cam.camera_x -= right_x * speed; cam.camera_z -= right_z * speed; }
+                        7 => { cam.camera_x += right_x * speed; cam.camera_z += right_z * speed; }
                         _ => {}
                     }
                 }
+                (cam.camera_x, cam.camera_y, cam.camera_z)
+            };
+            let mut q = avoengine::physics::Physics_queue.lock().unwrap();
+            if let Some(player) = q.iter_mut().find(|p| p.special_name == PLAYER_NAME) {
+                player.x = cx;
+                player.y = cy - PLAYER_HEIGHT;
+                player.z = cz;
+                player.Clear_forces();
             }
+        } else {
+            let current_tick = avoengine::tick_system::Get_current_tick();
+            if current_tick != last_tick {
+                last_tick = current_tick;
+                let yaw_rad = Camera.lock().unwrap().camera_yaw.to_radians();
+                let fwd = [yaw_rad.sin(), 0.0, yaw_rad.cos()];
+                let right = [yaw_rad.cos(), 0.0, -yaw_rad.sin()];
+                let mut q = avoengine::physics::Physics_queue.lock().unwrap();
+                if let Some(player) = q.iter_mut().find(|p| p.special_name == PLAYER_NAME) {
+                    for key in &keys {
+                        match *key {
+                            26 => player.Add_force([fwd[0] * WALK_FORCE, 0.0, fwd[2] * WALK_FORCE]),
+                            22 => player.Add_force([-fwd[0] * WALK_FORCE, 0.0, -fwd[2] * WALK_FORCE]),
+                            4 => player.Add_force([-right[0] * WALK_FORCE, 0.0, -right[2] * WALK_FORCE]),
+                            7 => player.Add_force([right[0] * WALK_FORCE, 0.0, right[2] * WALK_FORCE]),
+                            _ => {}
+                        }
+                    }
+                }
+            }
+
+            if mouse[5] > 0 {
+                let has_contact = {
+                    let q = avoengine::physics::Physics_queue.lock().unwrap();
+                    q.iter()
+                        .find(|p| p.special_name == PLAYER_NAME)
+                        .map(|p| !p.Get_impacts().is_empty())
+                        .unwrap_or(false)
+                };
+                if has_contact {
+                    let mut q = avoengine::physics::Physics_queue.lock().unwrap();
+                    if let Some(player) = q.iter_mut().find(|p| p.special_name == PLAYER_NAME) {
+                        player.Add_force([0.0, JUMP_FORCE, 0.0]);
+                    }
+                }
+            }
+        }
+
+        physics::Update_physics();
+
+        if !noclip {
+            let ppos = {
+                let q = avoengine::physics::Physics_queue.lock().unwrap();
+                q.iter().find(|p| p.special_name == PLAYER_NAME).map(|p| (p.x, p.y, p.z))
+            };
+            if let Some((px, py, pz)) = ppos {
+                let mut cam = Camera.lock().unwrap();
+                cam.camera_x = px;
+                cam.camera_y = py + PLAYER_HEIGHT;
+                cam.camera_z = pz;
+            }
+        }
 
         let t_pressed = keys.iter().any(|k| *k == 23);
         if t_pressed && !t_was_pressed {
@@ -343,7 +483,7 @@ fn main() {
             last_time = Instant::now();
         }
 
-        if !uzhas {
+        if !running {
             break;
         }
     }
