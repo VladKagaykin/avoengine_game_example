@@ -1,7 +1,6 @@
 use avoengine::*;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-
 fn sub(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
 }
@@ -15,7 +14,6 @@ fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
         a[0] * b[1] - a[1] * b[0],
     ]
 }
-
 fn ray_tri(
     origin: [f32; 3],
     dir: [f32; 3],
@@ -44,13 +42,11 @@ fn ray_tri(
     let t = f * dot(e2, q);
     if t > 1e-4 { Some(t) } else { None }
 }
-
 fn raycast_scene(origin: [f32; 3], dir: [f32; 3]) -> Option<([f32; 3], [f32; 3])> {
     let static_result: Option<(f32, [f32; 3], [f32; 3])> = {
         let scene = avoengine::Static_scene.lock().unwrap();
         let mut best_t = f32::INFINITY;
         let mut best_hit: Option<([f32; 3], [f32; 3])> = None;
-
         for obj in scene.iter() {
             let n = obj.vertices.len();
             let mut i = 0;
@@ -93,12 +89,9 @@ fn raycast_scene(origin: [f32; 3], dir: [f32; 3]) -> Option<([f32; 3], [f32; 3])
                 i += 9;
             }
         }
-
         best_hit.map(|(p, n)| (best_t, p, n))
     };
-
     let dynamic_result = avoengine::render::Raycast_dynamic(origin, dir);
-
     match (static_result, dynamic_result) {
         (Some((st, sp, sn)), Some((dt, dp, dn))) => {
             if st <= dt { Some((sp, sn)) } else { Some((dp, dn)) }
@@ -108,7 +101,6 @@ fn raycast_scene(origin: [f32; 3], dir: [f32; 3]) -> Option<([f32; 3], [f32; 3])
         (None, None) => None,
     }
 }
-
 fn offset_toward_triangle(hit: [f32; 3], tri_centroid: [f32; 3]) -> [f32; 3] {
     let d = sub(tri_centroid, hit);
     let dl = (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt();
@@ -119,15 +111,12 @@ fn offset_toward_triangle(hit: [f32; 3], tri_centroid: [f32; 3]) -> [f32; 3] {
         hit
     }
 }
-
 const PLAYER_NAME: &str = "__player";
 const PLAYER_HEIGHT: f32 = 1.5;
 const WALK_FORCE: f32 = 3.75;
 const JUMP_FORCE: f32 = 7.5;
-
 fn main() {
     avoengine::Engine_setup();
-
     let tile_vertices: Vec<f32> = vec![
         1.0, 0.0,  1.0,
         1.0, 0.0, -1.0,
@@ -136,7 +125,6 @@ fn main() {
         -1.0, 0.0, -1.0,
         -1.0, 0.0,  1.0,
     ];
-
     let cube_vertices: Vec<f32> = vec![
         -1.0, -1.0,  1.0,   1.0, -1.0,  1.0,   1.0,  1.0,  1.0,
         -1.0, -1.0,  1.0,   1.0,  1.0,  1.0,  -1.0,  1.0,  1.0,
@@ -151,7 +139,6 @@ fn main() {
         -1.0, -1.0, -1.0,   1.0, -1.0, -1.0,   1.0, -1.0,  1.0,
         -1.0, -1.0, -1.0,   1.0, -1.0,  1.0,  -1.0, -1.0,  1.0,
     ];
-
     {
         let mut scene = avoengine::Static_scene.lock().unwrap();
         for x in (-10..=10).step_by(2) {
@@ -196,7 +183,6 @@ fn main() {
             special_name: String::new(),
         });
     }
-
     {
         let mut physics = avoengine::Physics_scene.lock().unwrap();
         let mut floor_props = HashMap::new();
@@ -205,10 +191,10 @@ fn main() {
         physics.push(avoengine::Physics_components {
             x: 0.0, y: 0.0, z: 0.0,
             vertices: vec![
-                 10.0, 0.0,  10.0,
-                 10.0, 0.0, -10.0,
+                10.0, 0.0,  10.0,
+                10.0, 0.0, -10.0,
                 -10.0, 0.0, -10.0,
-                 10.0, 0.0,  10.0,
+                10.0, 0.0,  10.0,
                 -10.0, 0.0, -10.0,
                 -10.0, 0.0,  10.0,
             ],
@@ -230,7 +216,6 @@ fn main() {
             });
         }
     }
-
     match avoengine::gltf_parser::Import_gltf("data/mark(27_10_2026).gltf".to_string()) {
         Some(import) => {
             let mut dyn_obj = avoengine::render::Dynamic_components::new("mark".to_string());
@@ -244,7 +229,6 @@ fn main() {
         }
         None => println!("[game] Failed to import model data/mark(27_10_2026).gltf"),
     }
-
     avoengine::gui::GUI_SCENE.lock().unwrap().push(
         avoengine::gui::GuiElement::Text {
             template: "FPS: {fps}".to_string(),
@@ -259,12 +243,23 @@ fn main() {
         .lock()
         .unwrap()
         .insert("fps".to_string(), "0.00".to_string());
-
     avoengine::render::Bake_static_scene();
+    {
+        let mut static_light = avoengine::Static_light.lock().unwrap();
+        static_light.push(avoengine::Light_components {
+            x: 0.0,
+            y: 10.0,
+            z: 0.0,
+            RGB_color: [255, 255, 255],
+            cone_angle: 90.0,
+            pitch: -90.0,
+            yaw: 0.0,
+            special_name: "static_ceiling_light".to_string(),
+        });
+    }
+    avoengine::light::Bake_light();
     avoengine::physics::Bake_physics_scene();
-
     avoengine::window::Mouse_capture();
-
     {
         let mut player = avoengine::physics::Dynamic_physics_components::new(PLAYER_NAME.to_string());
         player.x = 0.0;
@@ -275,14 +270,12 @@ fn main() {
         player.properties.insert("resistance".to_string(), "0.5".to_string());
         avoengine::physics::Physics_queue.lock().unwrap().push(player);
     }
-
     {
         let mut cam = Camera.lock().unwrap();
         cam.camera_x = 0.0;
         cam.camera_y = 5.0 + PLAYER_HEIGHT;
         cam.camera_z = 0.0;
     }
-
     let mut frame_count: u32 = 0;
     let mut last_time = Instant::now();
     let mut running = true;
@@ -291,22 +284,18 @@ fn main() {
     let mut last_tick = avoengine::tick_system::Get_current_tick();
     let mut t_was_pressed = false;
     let mut h_was_pressed = false;
-
     loop {
         let keys = avoengine::window::Get_pressed_keys();
         let mouse = avoengine::window::Get_mouse();
-
         if keys.iter().any(|k| *k == 20) {
             running = false;
         }
-
         {
             let mut cam = Camera.lock().unwrap();
             let sens = 0.15;
             cam.camera_yaw += mouse[2] as f32 * sens;
             cam.camera_pitch -= mouse[3] as f32 * sens;
         }
-
         {
             let rot_speed = 5.8;
             let mut cam = Camera.lock().unwrap();
@@ -320,7 +309,6 @@ fn main() {
                 }
             }
         }
-
         let lmb_pressed = (mouse[4] & 1) != 0;
         if lmb_pressed && !lmb_was_pressed {
             noclip = !noclip;
@@ -345,7 +333,6 @@ fn main() {
             }
         }
         lmb_was_pressed = lmb_pressed;
-
         if noclip {
             let (cx, cy, cz) = {
                 let mut cam = Camera.lock().unwrap();
@@ -395,7 +382,6 @@ fn main() {
                     }
                 }
             }
-
             if mouse[5] > 0 {
                 let has_contact = {
                     let q = avoengine::physics::Physics_queue.lock().unwrap();
@@ -412,9 +398,7 @@ fn main() {
                 }
             }
         }
-
         physics::Update_physics();
-
         if !noclip {
             let ppos = {
                 let q = avoengine::physics::Physics_queue.lock().unwrap();
@@ -427,7 +411,6 @@ fn main() {
                 cam.camera_z = pz;
             }
         }
-
         let t_pressed = keys.iter().any(|k| *k == 23);
         if t_pressed && !t_was_pressed {
             let (position, forward) = {
@@ -443,7 +426,6 @@ fn main() {
                     ],
                 )
             };
-
             match raycast_scene(position, forward) {
                 Some((hit, normal)) => {
                     let hit = offset_toward_triangle(hit, [hit[0] - normal[0], hit[1] - normal[1], hit[2] - normal[2]]);
@@ -458,7 +440,6 @@ fn main() {
             }
         }
         t_was_pressed = t_pressed;
-
         let h_pressed = keys.iter().any(|k| *k == 11);
         if h_pressed && !h_was_pressed {
             let mut queue = avoengine::render::Draw_queue.lock().unwrap();
@@ -467,10 +448,8 @@ fn main() {
             }
         }
         h_was_pressed = h_pressed;
-
         avoengine::render::Render_frame();
         window::Update_frame();
-
         frame_count += 1;
         let elapsed = last_time.elapsed();
         if elapsed >= Duration::from_millis(1000) {
@@ -482,11 +461,9 @@ fn main() {
             frame_count = 0;
             last_time = Instant::now();
         }
-
         if !running {
             break;
         }
     }
-
     println!("Hello, world!");
 }
