@@ -224,19 +224,26 @@ fn main() {
 
     avoengine::render::Bake_static_scene();
 
+    avoengine::window::Mouse_capture();
+
     let mut frame_count: u32 = 0;
     let mut last_time = Instant::now();
     let mut uzhas = true;
     let mut t_was_pressed = false;
     let mut h_was_pressed = false;
 
-    let mut last_tick: u128 = 0;
-    let mut current_tick: u128 = avoengine::tick_system::Get_current_tick();
 
     loop {
         let keys = avoengine::window::Get_pressed_keys();
-        current_tick = avoengine::tick_system::Get_current_tick();
-        if last_tick != current_tick{
+        let mouse = avoengine::window::Get_mouse();
+
+        {
+            let mut cam = Camera.lock().unwrap();
+            let sens = 0.15;
+            cam.camera_yaw += mouse[2] as f32 * sens;
+            cam.camera_pitch = (cam.camera_pitch - mouse[3] as f32 * sens).clamp(-89.0, 89.0);
+        }
+
             {
                 let mut cam = Camera.lock().unwrap();
 
@@ -280,8 +287,6 @@ fn main() {
                     }
                 }
             }
-            last_tick = current_tick;
-        }
 
         let t_pressed = keys.iter().any(|k| *k == 23);
         if t_pressed && !t_was_pressed {
