@@ -167,6 +167,9 @@ fn main() {
                     x: x as f32,
                     y: 0.0,
                     z: z as f32,
+                    pitch: 0.0,
+                    yaw: 0.0,
+                    roll: 0.0,
                     vertices: tile_vertices.clone(),
                     RGBA_color: color,
                     properties: HashMap::new(),
@@ -176,6 +179,7 @@ fn main() {
         }
         scene.push(avoengine::Draw_components {
             x: 7.0, y: 1.1, z: 7.0,
+            pitch: 0.0, yaw: 0.0, roll: 0.0,
             vertices: cube_vertices.clone(),
             RGBA_color: [255, 0, 0, 255],
             properties: HashMap::new(),
@@ -183,6 +187,7 @@ fn main() {
         });
         scene.push(avoengine::Draw_components {
             x: -9.0, y: 1.1, z: -9.0,
+            pitch: 0.0, yaw: 0.0, roll: 0.0,
             vertices: cube_vertices.clone(),
             RGBA_color: [0, 0, 255, 255],
             properties: HashMap::new(),
@@ -190,6 +195,7 @@ fn main() {
         });
         scene.push(avoengine::Draw_components {
             x: -5.0, y: 1.1, z: 5.0,
+            pitch: 0.0, yaw: 0.0, roll: 0.0,
             vertices: cube_vertices.clone(),
             RGBA_color: [255, 0, 255, 128],
             properties: HashMap::new(),
@@ -204,13 +210,14 @@ fn main() {
         floor_props.insert("resistance".to_string(), "1".to_string());
         physics.push(avoengine::Physics_components {
             x: 0.0, y: 0.0, z: 0.0,
+            pitch: 0.0, yaw: 0.0, roll: 0.0,
             vertices: vec![
-                 10.0, 0.0,  10.0,
-                 10.0, 0.0, -10.0,
-                -10.0, 0.0, -10.0,
-                 10.0, 0.0,  10.0,
-                -10.0, 0.0, -10.0,
-                -10.0, 0.0,  10.0,
+                 11.0, 0.0,  11.0,
+                 11.0, 0.0, -11.0,
+                -11.0, 0.0, -11.0,
+                 11.0, 0.0,  11.0,
+                -11.0, 0.0, -11.0,
+                -11.0, 0.0,  11.0,
             ],
             properties: floor_props,
             special_name: "floor".to_string(),
@@ -224,6 +231,7 @@ fn main() {
             props.insert("collision".to_string(), "1".to_string());
             physics.push(avoengine::Physics_components {
                 x: px, y: py, z: pz,
+                pitch: 0.0, yaw: 0.0, roll: 0.0,
                 vertices: cube_vertices.clone(),
                 properties: props,
                 special_name: name.to_string(),
