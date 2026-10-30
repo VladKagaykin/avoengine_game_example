@@ -269,6 +269,31 @@ fn main() {
         .insert("fps".to_string(), "0.00".to_string());
 
     avoengine::render::Bake_static_scene();
+    {
+        let mut lm = avoengine::Pseudo_light_map.lock().unwrap();
+        lm.push(avoengine::Draw_components {
+            x: 10.0, y: 0.0, z: 0.0,
+            pitch: 0.0, yaw: 0.0, roll: 0.0,
+            vertices: vec![
+                -10.0, -10.0,  10.0,   10.0, -10.0,  10.0,   10.0,  10.0,  10.0,
+                -10.0, -10.0,  10.0,   10.0,  10.0,  10.0,  -10.0,  10.0,  10.0,
+                -10.0, -10.0, -10.0,  -10.0,  10.0, -10.0,   10.0,  10.0, -10.0,
+                -10.0, -10.0, -10.0,   10.0,  10.0, -10.0,   10.0, -10.0, -10.0,
+                -10.0, -10.0, -10.0,  -10.0, -10.0,  10.0,  -10.0,  10.0,  10.0,
+                -10.0, -10.0, -10.0,  -10.0,  10.0,  10.0,  -10.0,  10.0, -10.0,
+                10.0, -10.0, -10.0,   10.0,  10.0, -10.0,   10.0,  10.0,  10.0,
+                10.0, -10.0, -10.0,   10.0,  10.0,  10.0,   10.0, -10.0,  10.0,
+                -10.0,  10.0, -10.0,  -10.0,  10.0,  10.0,   10.0,  10.0,  10.0,
+                -10.0,  10.0, -10.0,   10.0,  10.0,  10.0,   10.0,  10.0, -10.0,
+                -10.0, -10.0, -10.0,   10.0, -10.0, -10.0,   10.0, -10.0,  10.0,
+                -10.0, -10.0, -10.0,   10.0, -10.0,  10.0,  -10.0, -10.0,  10.0
+            ],   
+            RGBA_color: [255, 255, 255, 255],    
+            properties: HashMap::new(),
+            special_name: "".to_string(),
+        });
+    }
+    avoengine::render::Bake_light();
     avoengine::physics::Bake_physics_scene();
 
     avoengine::window::Mouse_capture();
@@ -299,6 +324,7 @@ fn main() {
     let mut last_tick = avoengine::tick_system::Get_current_tick();
     let mut t_was_pressed = false;
     let mut h_was_pressed = false;
+    let mut physics_tick = avoengine::tick_system::Get_current_tick();
 
     loop {
         let keys = avoengine::window::Get_pressed_keys();
@@ -420,8 +446,10 @@ fn main() {
                 }
             }
         }
-
-        physics::Update_physics();
+        // if avoengine::tick_system::Get_current_tick() != physics_tick{
+            physics::Update_physics();
+        //     physics_tick = avoengine::tick_system::Get_current_tick();
+        // }
 
         if !noclip {
             let ppos = {
