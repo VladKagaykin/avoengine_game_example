@@ -123,7 +123,7 @@ fn offset_toward_triangle(hit: [f32; 3], tri_centroid: [f32; 3]) -> [f32; 3] {
 const PLAYER_NAME: &str = "__player";
 const PLAYER_HEIGHT: f32 = 1.5;
 const WALK_FORCE: f32 = 7.5;
-const JUMP_FORCE: f32 = 15.0;
+const JUMP_FORCE: f32 = 300.0;
 
 fn main() {
     avoengine::Engine_setup();
@@ -264,10 +264,47 @@ fn main() {
             offset: (10.0, 10.0),
         },
     );
-    avoengine::gui::GUI_OBJECTS
-        .lock()
-        .unwrap()
-        .insert("fps".to_string(), "0.00".to_string());
+    avoengine::gui::GUI_SCENE.lock().unwrap().push(
+        avoengine::gui::GuiElement::Text {
+            template: "X: {cam_x}   Y: {cam_y}   Z: {cam_z}".to_string(),
+            color: [255, 255, 255, 255],
+            font: "proportional".to_string(),
+            size: 15.0,
+            anchor: avoengine::gui::Anchor::TopLeft,
+            offset: (10.0, 32.0),
+        },
+    );
+    avoengine::gui::GUI_SCENE.lock().unwrap().push(
+        avoengine::gui::GuiElement::Text {
+            template: "Yaw: {yaw}   Pitch: {pitch}".to_string(),
+            color: [255, 255, 255, 255],
+            font: "proportional".to_string(),
+            size: 15.0,
+            anchor: avoengine::gui::Anchor::TopLeft,
+            offset: (10.0, 54.0),
+        },
+    );
+    avoengine::gui::GUI_SCENE.lock().unwrap().push(
+        avoengine::gui::GuiElement::Text {
+            template: "{player_speed}".to_string(),
+            color: [255, 255, 255, 255],
+            font: "proportional".to_string(),
+            size: 15.0,
+            anchor: avoengine::gui::Anchor::TopRight,
+            offset: (-10.0, 10.0),
+        },
+    );
+
+    {
+        let mut objs = avoengine::gui::GUI_OBJECTS.lock().unwrap();
+        objs.insert("fps".to_string(),          "0.00".to_string());
+        objs.insert("cam_x".to_string(),        "0.00".to_string());
+        objs.insert("cam_y".to_string(),        "0.00".to_string());
+        objs.insert("cam_z".to_string(),        "0.00".to_string());
+        objs.insert("yaw".to_string(),          "0.00".to_string());
+        objs.insert("pitch".to_string(),        "0.00".to_string());
+        objs.insert("player_speed".to_string(), "0.00".to_string());
+    }
 
     avoengine::render::Bake_static_scene();
     {
@@ -288,8 +325,8 @@ fn main() {
                 -10.0,  10.0, -10.0,   10.0,  10.0,  10.0,   10.0,  10.0, -10.0,
                 -10.0, -10.0, -10.0,   10.0, -10.0, -10.0,   10.0, -10.0,  10.0,
                 -10.0, -10.0, -10.0,   10.0, -10.0,  10.0,  -10.0, -10.0,  10.0
-            ],   
-            RGBA_color: [255, 255, 255, 255],    
+            ],
+            RGBA_color: [255, 255, 255, 255],
             properties: HashMap::new(),
             special_name: "".to_string(),
         });
@@ -307,6 +344,7 @@ fn main() {
         player.properties.insert("collision".to_string(), "1".to_string());
         player.properties.insert("has_gravity".to_string(), "1".to_string());
         player.properties.insert("resistance".to_string(), "0.5".to_string());
+        player.properties.insert("mass".to_string(), "7.5".to_string());
         avoengine::physics::Physics_queue.lock().unwrap().push(player);
     }
 
@@ -327,7 +365,11 @@ fn main() {
     let mut h_was_pressed = false;
     let mut v_was_pressed = false;
     let mut c_was_pressed = false;
+    let mut e_was_pressed = false;
     let mut physics_tick = avoengine::tick_system::Get_current_tick();
+    let mut prev_player_pos: Option<[f32; 3]> = None;
+    let mut prev_speed_time = Instant::now();
+    let mut mouse_captured = true;
 
     loop {
         let keys = avoengine::window::Get_pressed_keys();
@@ -337,7 +379,19 @@ fn main() {
             running = false;
         }
 
-        {
+        let e_pressed = keys.iter().any(|k| *k == 8);
+        if e_pressed && !e_was_pressed {
+            if mouse_captured {
+                avoengine::window::Return_mouse();
+                mouse_captured = false;
+            } else {
+                avoengine::window::Mouse_capture();
+                mouse_captured = true;
+            }
+        }
+        e_was_pressed = e_pressed;
+
+        if mouse_captured {
             let mut cam = Camera.lock().unwrap();
             let sens = 0.15;
             cam.camera_yaw += mouse[2] as f32 * sens;
@@ -360,24 +414,26 @@ fn main() {
 
         let lmb_pressed = (mouse[4] & 1) != 0;
         if lmb_pressed && !lmb_was_pressed {
-            noclip = !noclip;
-            let cam_pos = {
-                let cam = Camera.lock().unwrap();
-                [cam.camera_x, cam.camera_y, cam.camera_z]
-            };
-            let mut q = avoengine::physics::Physics_queue.lock().unwrap();
-            if let Some(player) = q.iter_mut().find(|p| p.special_name == PLAYER_NAME) {
-                if noclip {
-                    player.properties.insert("collision".to_string(), "0".to_string());
-                    player.properties.insert("has_gravity".to_string(), "0".to_string());
-                    player.Clear_forces();
-                    player.x = cam_pos[0];
-                    player.y = cam_pos[1] - PLAYER_HEIGHT;
-                    player.z = cam_pos[2];
-                } else {
-                    player.properties.insert("collision".to_string(), "1".to_string());
-                    player.properties.insert("has_gravity".to_string(), "1".to_string());
-                    player.Clear_forces();
+            if mouse_captured {
+                noclip = !noclip;
+                let cam_pos = {
+                    let cam = Camera.lock().unwrap();
+                    [cam.camera_x, cam.camera_y, cam.camera_z]
+                };
+                let mut q = avoengine::physics::Physics_queue.lock().unwrap();
+                if let Some(player) = q.iter_mut().find(|p| p.special_name == PLAYER_NAME) {
+                    if noclip {
+                        player.properties.insert("collision".to_string(), "0".to_string());
+                        player.properties.insert("has_gravity".to_string(), "0".to_string());
+                        player.Clear_forces();
+                        player.x = cam_pos[0];
+                        player.y = cam_pos[1] - PLAYER_HEIGHT;
+                        player.z = cam_pos[2];
+                    } else {
+                        player.properties.insert("collision".to_string(), "1".to_string());
+                        player.properties.insert("has_gravity".to_string(), "1".to_string());
+                        player.Clear_forces();
+                    }
                 }
             }
         }
@@ -453,12 +509,15 @@ fn main() {
         physics::Update_physics();
         avoengine::sound::Play_sound();
 
+        let player_pos_now = {
+            let q = avoengine::physics::Physics_queue.lock().unwrap();
+            q.iter()
+                .find(|p| p.special_name == PLAYER_NAME)
+                .map(|p| (p.x, p.y, p.z))
+        };
+
         if !noclip {
-            let ppos = {
-                let q = avoengine::physics::Physics_queue.lock().unwrap();
-                q.iter().find(|p| p.special_name == PLAYER_NAME).map(|p| (p.x, p.y, p.z))
-            };
-            if let Some((px, py, pz)) = ppos {
+            if let Some((px, py, pz)) = player_pos_now {
                 let mut cam = Camera.lock().unwrap();
                 cam.camera_x = px;
                 cam.camera_y = py + PLAYER_HEIGHT;
@@ -466,8 +525,44 @@ fn main() {
             }
         }
 
+        let (cx, cy, cz, cyaw, cpitch) = {
+            let cam = Camera.lock().unwrap();
+            (cam.camera_x, cam.camera_y, cam.camera_z, cam.camera_yaw, cam.camera_pitch)
+        };
+
+        let player_pos_arr: Option<[f32; 3]> = player_pos_now.map(|(x, y, z)| [x, y, z]);
+
+        let now = Instant::now();
+        let speed_val: Option<f32> = match (player_pos_arr, prev_player_pos) {
+            (Some(cur), Some(prev)) => {
+                let dx = cur[0] - prev[0];
+                let dy = cur[1] - prev[1];
+                let dz = cur[2] - prev[2];
+                let dist = (dx * dx + dy * dy + dz * dz).sqrt();
+                let dt = now.duration_since(prev_speed_time).as_secs_f32().max(1e-6);
+                Some(dist / dt)
+            }
+            _ => None,
+        };
+        if player_pos_arr.is_some() {
+            prev_player_pos = player_pos_arr;
+            prev_speed_time = now;
+        }
+
+        {
+            let mut objs = avoengine::gui::GUI_OBJECTS.lock().unwrap();
+            objs.insert("cam_x".to_string(), format!("{:.2}", cx));
+            objs.insert("cam_y".to_string(), format!("{:.2}", cy));
+            objs.insert("cam_z".to_string(), format!("{:.2}", cz));
+            objs.insert("yaw".to_string(),   format!("{:.2}", cyaw));
+            objs.insert("pitch".to_string(), format!("{:.2}", cpitch));
+            if let Some(s) = speed_val {
+                objs.insert("player_speed".to_string(), format!("{:.2}", s));
+            }
+        }
+
         let t_pressed = keys.iter().any(|k| *k == 23);
-        if t_pressed && !t_was_pressed {
+        if t_pressed && !t_was_pressed && mouse_captured {
             let (position, forward) = {
                 let cam = Camera.lock().unwrap();
                 let yaw = cam.camera_yaw.to_radians();
