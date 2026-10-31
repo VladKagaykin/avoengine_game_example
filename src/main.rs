@@ -208,6 +208,7 @@ fn main() {
         let mut floor_props = HashMap::new();
         floor_props.insert("collision".to_string(), "1".to_string());
         floor_props.insert("resistance".to_string(), "1".to_string());
+        floor_props.insert("soundproofing".to_string(), "0.9".to_string());
         physics.push(avoengine::Physics_components {
             x: 0.0, y: 0.0, z: 0.0,
             pitch: 0.0, yaw: 0.0, roll: 0.0,
@@ -324,6 +325,8 @@ fn main() {
     let mut last_tick = avoengine::tick_system::Get_current_tick();
     let mut t_was_pressed = false;
     let mut h_was_pressed = false;
+    let mut v_was_pressed = false;
+    let mut c_was_pressed = false;
     let mut physics_tick = avoengine::tick_system::Get_current_tick();
 
     loop {
@@ -446,10 +449,9 @@ fn main() {
                 }
             }
         }
-        // if avoengine::tick_system::Get_current_tick() != physics_tick{
-            physics::Update_physics();
-        //     physics_tick = avoengine::tick_system::Get_current_tick();
-        // }
+
+        physics::Update_physics();
+        avoengine::sound::Play_sound();
 
         if !noclip {
             let ppos = {
@@ -503,6 +505,30 @@ fn main() {
             }
         }
         h_was_pressed = h_pressed;
+
+        let v_pressed = keys.iter().any(|k| *k == 25);
+        if v_pressed && !v_was_pressed {
+            let mut sounds = avoengine::Sounds.lock().unwrap();
+            sounds.retain(|s| s.special_name != "voyager");
+            sounds.push(avoengine::Sound_components {
+                path: "data/voyager.wav".to_string(),
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+                time: 0,
+                properties: HashMap::new(),
+                special_name: "voyager".to_string(),
+            });
+            println!("[game] Queued voyager sound at (0, 1, 0)");
+        }
+        v_was_pressed = v_pressed;
+
+        let c_pressed = keys.iter().any(|k| *k == 6);
+        if c_pressed && !c_was_pressed {
+            avoengine::Sounds.lock().unwrap().clear();
+            println!("[game] Cleared sound queue");
+        }
+        c_was_pressed = c_pressed;
 
         avoengine::render::Render_frame();
         window::Update_frame();
