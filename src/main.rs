@@ -5,9 +5,11 @@ use std::time::{Duration, Instant};
 fn sub(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
 }
+
 fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
+
 fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     [
         a[1] * b[2] - a[2] * b[1],
@@ -50,7 +52,6 @@ fn raycast_scene(origin: [f32; 3], dir: [f32; 3]) -> Option<([f32; 3], [f32; 3])
         let scene = avoengine::Static_scene.lock().unwrap();
         let mut best_t = f32::INFINITY;
         let mut best_hit: Option<([f32; 3], [f32; 3])> = None;
-
         for obj in scene.iter() {
             let n = obj.vertices.len();
             let mut i = 0;
@@ -93,12 +94,9 @@ fn raycast_scene(origin: [f32; 3], dir: [f32; 3]) -> Option<([f32; 3], [f32; 3])
                 i += 9;
             }
         }
-
         best_hit.map(|(p, n)| (best_t, p, n))
     };
-
     let dynamic_result = avoengine::render::Raycast_dynamic(origin, dir);
-
     match (static_result, dynamic_result) {
         (Some((st, sp, sn)), Some((dt, dp, dn))) => {
             if st <= dt { Some((sp, sn)) } else { Some((dp, dn)) }
@@ -121,13 +119,16 @@ fn offset_toward_triangle(hit: [f32; 3], tri_centroid: [f32; 3]) -> [f32; 3] {
 }
 
 const PLAYER_NAME: &str = "__player";
-const PLAYER_HEIGHT: f32 = 1.5;
+const MODEL_NAME: &str = "mark";
+const PLAYER_HEIGHT: f32 = 1.9;
+const CAMERA_FORWARD_OFFSET: f32 = 0.5;
 const WALK_FORCE: f32 = 7.5;
 const JUMP_FORCE: f32 = 300.0;
+const SPEED_THRESHOLD: f32 = 0.05;
 
 fn main() {
     avoengine::Engine_setup();
-
+    
     let tile_vertices: Vec<f32> = vec![
         1.0, 0.0,  1.0,
         1.0, 0.0, -1.0,
@@ -136,7 +137,7 @@ fn main() {
         -1.0, 0.0, -1.0,
         -1.0, 0.0,  1.0,
     ];
-
+    
     let cube_vertices: Vec<f32> = vec![
         -1.0, -1.0,  1.0,   1.0, -1.0,  1.0,   1.0,  1.0,  1.0,
         -1.0, -1.0,  1.0,   1.0,  1.0,  1.0,  -1.0,  1.0,  1.0,
@@ -151,7 +152,7 @@ fn main() {
         -1.0, -1.0, -1.0,   1.0, -1.0, -1.0,   1.0, -1.0,  1.0,
         -1.0, -1.0, -1.0,   1.0, -1.0,  1.0,  -1.0, -1.0,  1.0,
     ];
-
+    
     {
         let mut scene = avoengine::Static_scene.lock().unwrap();
         for x in (-10..=10).step_by(2) {
@@ -202,7 +203,7 @@ fn main() {
             special_name: String::new(),
         });
     }
-
+    
     {
         let mut physics = avoengine::Physics_scene.lock().unwrap();
         let mut floor_props = HashMap::new();
@@ -213,10 +214,10 @@ fn main() {
             x: 0.0, y: 0.0, z: 0.0,
             pitch: 0.0, yaw: 0.0, roll: 0.0,
             vertices: vec![
-                 11.0, 0.0,  11.0,
-                 11.0, 0.0, -11.0,
+                11.0, 0.0,  11.0,
+                11.0, 0.0, -11.0,
                 -11.0, 0.0, -11.0,
-                 11.0, 0.0,  11.0,
+                11.0, 0.0,  11.0,
                 -11.0, 0.0, -11.0,
                 -11.0, 0.0,  11.0,
             ],
@@ -239,21 +240,7 @@ fn main() {
             });
         }
     }
-
-    match avoengine::gltf_parser::Import_gltf("data/mark(27_10_2026).gltf".to_string()) {
-        Some(import) => {
-            let mut dyn_obj = avoengine::render::Dynamic_components::new("mark".to_string());
-            dyn_obj.x = 15.0;
-            dyn_obj.y = 1.0;
-            dyn_obj.z = 0.0;
-            dyn_obj.Load_from_import(&import);
-            dyn_obj.Set_default_animation("standart".to_string());
-            avoengine::render::Draw_queue.lock().unwrap().push(dyn_obj);
-            println!("[game] Imported model 'mark'");
-        }
-        None => println!("[game] Failed to import model data/mark(27_10_2026).gltf"),
-    }
-
+    
     avoengine::gui::GUI_SCENE.lock().unwrap().push(
         avoengine::gui::GuiElement::Text {
             template: "FPS: {fps}".to_string(),
@@ -264,6 +251,7 @@ fn main() {
             offset: (10.0, 10.0),
         },
     );
+    
     avoengine::gui::GUI_SCENE.lock().unwrap().push(
         avoengine::gui::GuiElement::Text {
             template: "X: {cam_x}   Y: {cam_y}   Z: {cam_z}".to_string(),
@@ -274,6 +262,7 @@ fn main() {
             offset: (10.0, 32.0),
         },
     );
+    
     avoengine::gui::GUI_SCENE.lock().unwrap().push(
         avoengine::gui::GuiElement::Text {
             template: "Yaw: {yaw}   Pitch: {pitch}".to_string(),
@@ -284,6 +273,7 @@ fn main() {
             offset: (10.0, 54.0),
         },
     );
+    
     avoengine::gui::GUI_SCENE.lock().unwrap().push(
         avoengine::gui::GuiElement::Text {
             template: "{player_speed}".to_string(),
@@ -294,7 +284,7 @@ fn main() {
             offset: (-10.0, 10.0),
         },
     );
-
+    
     {
         let mut objs = avoengine::gui::GUI_OBJECTS.lock().unwrap();
         objs.insert("fps".to_string(),          "0.00".to_string());
@@ -305,8 +295,9 @@ fn main() {
         objs.insert("pitch".to_string(),        "0.00".to_string());
         objs.insert("player_speed".to_string(), "0.00".to_string());
     }
-
+    
     avoengine::render::Bake_static_scene();
+    
     {
         let mut lm = avoengine::Pseudo_light_map.lock().unwrap();
         lm.push(avoengine::Draw_components {
@@ -331,11 +322,11 @@ fn main() {
             special_name: "".to_string(),
         });
     }
+    
     avoengine::render::Bake_light();
     avoengine::physics::Bake_physics_scene();
-
     avoengine::window::Mouse_capture();
-
+    
     {
         let mut player = avoengine::physics::Dynamic_physics_components::new(PLAYER_NAME.to_string());
         player.x = 0.0;
@@ -347,14 +338,26 @@ fn main() {
         player.properties.insert("mass".to_string(), "7.5".to_string());
         avoengine::physics::Physics_queue.lock().unwrap().push(player);
     }
-
+    
+    if let Some(import_result) = avoengine::gltf_parser::Import_gltf("data/mark(31_10_2026).gltf".to_string()) {
+        let mut model = avoengine::render::Dynamic_components::new(MODEL_NAME.to_string());
+        model.Load_from_import(&import_result);
+        model.Set_default_animation("default".to_string());
+        model.x = 0.0;
+        model.y = 0.0;
+        model.z = 0.0;
+        avoengine::render::Draw_queue.lock().unwrap().push(model);
+    } else {
+        println!("[game] Failed to import model data/mark(31_10_2026).gltf");
+    }
+    
     {
         let mut cam = Camera.lock().unwrap();
         cam.camera_x = 0.0;
         cam.camera_y = 5.0 + PLAYER_HEIGHT;
         cam.camera_z = 0.0;
     }
-
+    
     let mut frame_count: u32 = 0;
     let mut last_time = Instant::now();
     let mut running = true;
@@ -362,7 +365,6 @@ fn main() {
     let mut lmb_was_pressed = false;
     let mut last_tick = avoengine::tick_system::Get_current_tick();
     let mut t_was_pressed = false;
-    let mut h_was_pressed = false;
     let mut v_was_pressed = false;
     let mut c_was_pressed = false;
     let mut e_was_pressed = false;
@@ -370,15 +372,17 @@ fn main() {
     let mut prev_player_pos: Option<[f32; 3]> = None;
     let mut prev_speed_time = Instant::now();
     let mut mouse_captured = true;
-
+    let mut prev_on_ground: bool = false;
+    let mut current_anim_state: String = "default".to_string();
+    
     loop {
         let keys = avoengine::window::Get_pressed_keys();
         let mouse = avoengine::window::Get_mouse();
-
+        
         if keys.iter().any(|k| *k == 20) {
             running = false;
         }
-
+        
         let e_pressed = keys.iter().any(|k| *k == 8);
         if e_pressed && !e_was_pressed {
             if mouse_captured {
@@ -390,14 +394,14 @@ fn main() {
             }
         }
         e_was_pressed = e_pressed;
-
+        
         if mouse_captured {
             let mut cam = Camera.lock().unwrap();
             let sens = 0.15;
             cam.camera_yaw += mouse[2] as f32 * sens;
             cam.camera_pitch -= mouse[3] as f32 * sens;
         }
-
+        
         {
             let rot_speed = 5.8;
             let mut cam = Camera.lock().unwrap();
@@ -411,7 +415,7 @@ fn main() {
                 }
             }
         }
-
+        
         let lmb_pressed = (mouse[4] & 1) != 0;
         if lmb_pressed && !lmb_was_pressed {
             if mouse_captured {
@@ -438,7 +442,7 @@ fn main() {
             }
         }
         lmb_was_pressed = lmb_pressed;
-
+        
         if noclip {
             let (cx, cy, cz) = {
                 let mut cam = Camera.lock().unwrap();
@@ -488,7 +492,6 @@ fn main() {
                     }
                 }
             }
-
             if mouse[5] > 0 {
                 let has_contact = {
                     let q = avoengine::physics::Physics_queue.lock().unwrap();
@@ -505,33 +508,31 @@ fn main() {
                 }
             }
         }
-
+        
         physics::Update_physics();
         avoengine::sound::Play_sound();
-
+        
         let player_pos_now = {
             let q = avoengine::physics::Physics_queue.lock().unwrap();
             q.iter()
                 .find(|p| p.special_name == PLAYER_NAME)
                 .map(|p| (p.x, p.y, p.z))
         };
-
-        if !noclip {
-            if let Some((px, py, pz)) = player_pos_now {
-                let mut cam = Camera.lock().unwrap();
-                cam.camera_x = px;
-                cam.camera_y = py + PLAYER_HEIGHT;
-                cam.camera_z = pz;
-            }
-        }
-
+        
+        let on_ground = {
+            let q = avoengine::physics::Physics_queue.lock().unwrap();
+            q.iter()
+                .find(|p| p.special_name == PLAYER_NAME)
+                .map(|p| !p.Get_impacts().is_empty())
+                .unwrap_or(false)
+        };
+        
         let (cx, cy, cz, cyaw, cpitch) = {
             let cam = Camera.lock().unwrap();
             (cam.camera_x, cam.camera_y, cam.camera_z, cam.camera_yaw, cam.camera_pitch)
         };
-
+        
         let player_pos_arr: Option<[f32; 3]> = player_pos_now.map(|(x, y, z)| [x, y, z]);
-
         let now = Instant::now();
         let speed_val: Option<f32> = match (player_pos_arr, prev_player_pos) {
             (Some(cur), Some(prev)) => {
@@ -544,11 +545,134 @@ fn main() {
             }
             _ => None,
         };
+        
         if player_pos_arr.is_some() {
             prev_player_pos = player_pos_arr;
             prev_speed_time = now;
         }
+        
+        let has_horizontal_vel = speed_val.map(|s| s > SPEED_THRESHOLD).unwrap_or(false);
+        
+        if !noclip {
+            if let Some((px, py, pz)) = player_pos_now {
+                let yaw_rad = cyaw.to_radians();
+                let pitch_rad = cpitch.to_radians();
+                let fwd_x = pitch_rad.cos() * yaw_rad.sin();
+                let fwd_y = pitch_rad.sin();
+                let fwd_z = pitch_rad.cos() * yaw_rad.cos();
+                let mut cam = Camera.lock().unwrap();
+                cam.camera_x = px + fwd_x * CAMERA_FORWARD_OFFSET;
+                cam.camera_y = py + PLAYER_HEIGHT + fwd_y * CAMERA_FORWARD_OFFSET;
+                cam.camera_z = pz + fwd_z * CAMERA_FORWARD_OFFSET;
+            }
+        }
+        
+        {
+            let mut queue = avoengine::render::Draw_queue.lock().unwrap();
+            if let Some(model) = queue.iter_mut().find(|m| m.special_name == MODEL_NAME) {
+                if let Some((px, py, pz)) = player_pos_now {
+                    model.x = px;
+                    model.y = py;
+                    model.z = pz;
+                }
+                model.yaw = cyaw;
 
+                let head_idx = model.Get_skeleton().and_then(|skel| {
+                    let mut mesh_head: Option<usize> = None;
+                    for (i, b) in skel.bones.iter().enumerate() {
+                        if b.name == "head" {
+                            if skel.bones.iter().any(|c| c.parent == Some(i)) {
+                                return Some(i);
+                            }
+                            if mesh_head.is_none() { mesh_head = Some(i); }
+                        }
+                    }
+                    mesh_head
+                });
+
+                // if let Some(idx) = head_idx {
+                //     let pitch_rad = (cpitch * -1.0).to_radians();
+                //     let half = pitch_rad * 0.5;
+                //     let qz = half.sin();
+                //     let qw = half.cos();
+
+                //     let mut offsets: std::collections::HashMap<usize, [f32; 4]> =
+                //         std::collections::HashMap::new();
+                //     if let Some(s) = model.properties.get("bone_rotation_offsets") {
+                //         for entry in s.split(';') {
+                //             if let Some((k, v)) = entry.split_once(':') {
+                //                 if let (Ok(bi), Ok(vals)) = (
+                //                     k.parse::<usize>(),
+                //                     v.split(',').map(|p| p.parse::<f32>()).collect::<Result<Vec<_>, _>>(),
+                //                 ) {
+                //                     if vals.len() == 4 {
+                //                         offsets.insert(bi, [vals[0], vals[1], vals[2], vals[3]]);
+                //                     }
+                //                 }
+                //             }
+                //         }
+                //     }
+                //     offsets.insert(idx, [0.0, 0.0, qz, qw]);
+
+                //     let s: String = offsets.iter()
+                //         .map(|(k, v)| format!("{}:{},{},{},{}", k, v[0], v[1], v[2], v[3]))
+                //         .collect::<Vec<_>>()
+                //         .join(";");
+                //     model.properties.insert("bone_rotation_offsets".to_string(), s);
+                // }
+
+                if !noclip {
+                    if on_ground {
+                        if !prev_on_ground {
+                            model.Stop_all_animations();
+                            model.Play_animation("end_jump".to_string());
+                            model.properties.insert("default_animation".to_string(), "default".to_string());
+                            current_anim_state = "end_jump".to_string();
+                        } else if has_horizontal_vel {
+                            if current_anim_state != "walk" {
+                                model.Stop_all_animations();
+                                model.properties.insert("default_animation".to_string(), "walk".to_string());
+                                current_anim_state = "walk".to_string();
+                            }
+                        } else {
+                            if current_anim_state != "default" && current_anim_state != "end_jump" {
+                                model.Stop_all_animations();
+                                model.properties.insert("default_animation".to_string(), "default".to_string());
+                                current_anim_state = "default".to_string();
+                            } else if current_anim_state == "end_jump" && model.animations_in_play.is_empty() {
+                                model.properties.insert("default_animation".to_string(), "default".to_string());
+                                current_anim_state = "default".to_string();
+                            }
+                        }
+                    } else {
+                        if prev_on_ground {
+                            model.Stop_all_animations();
+                            model.Play_animation("start_jump".to_string());
+                            model.properties.insert("default_animation".to_string(), "jump_default".to_string());
+                            current_anim_state = "start_jump".to_string();
+                        } else {
+                            if current_anim_state == "start_jump" && !model.animations_in_play.contains(&"start_jump".to_string()) {
+                                current_anim_state = "jump_default".to_string();
+                            }
+                            if current_anim_state != "jump_default" && current_anim_state != "start_jump" {
+                                model.Stop_all_animations();
+                                model.properties.insert("default_animation".to_string(), "jump_default".to_string());
+                                current_anim_state = "jump_default".to_string();
+                            }
+                        }
+                    }
+                } else {
+                    if current_anim_state != "default" {
+                        model.Stop_all_animations();
+                        model.properties.insert("default_animation".to_string(), "default".to_string());
+                        current_anim_state = "default".to_string();
+                    }
+                }
+            }
+        }
+        
+        prev_on_ground = on_ground;
+        
         {
             let mut objs = avoengine::gui::GUI_OBJECTS.lock().unwrap();
             objs.insert("cam_x".to_string(), format!("{:.2}", cx));
@@ -560,7 +684,7 @@ fn main() {
                 objs.insert("player_speed".to_string(), format!("{:.2}", s));
             }
         }
-
+        
         let t_pressed = keys.iter().any(|k| *k == 23);
         if t_pressed && !t_was_pressed && mouse_captured {
             let (position, forward) = {
@@ -576,7 +700,6 @@ fn main() {
                     ],
                 )
             };
-
             match raycast_scene(position, forward) {
                 Some((hit, normal)) => {
                     let hit = offset_toward_triangle(hit, [hit[0] - normal[0], hit[1] - normal[1], hit[2] - normal[2]]);
@@ -591,16 +714,7 @@ fn main() {
             }
         }
         t_was_pressed = t_pressed;
-
-        let h_pressed = keys.iter().any(|k| *k == 11);
-        if h_pressed && !h_was_pressed {
-            let mut queue = avoengine::render::Draw_queue.lock().unwrap();
-            if let Some(obj) = queue.iter_mut().find(|o| o.special_name == "mark") {
-                obj.Play_animation("head".to_string());
-            }
-        }
-        h_was_pressed = h_pressed;
-
+        
         let v_pressed = keys.iter().any(|k| *k == 25);
         if v_pressed && !v_was_pressed {
             let mut sounds = avoengine::Sounds.lock().unwrap();
@@ -617,17 +731,17 @@ fn main() {
             println!("[game] Queued voyager sound at (0, 1, 0)");
         }
         v_was_pressed = v_pressed;
-
+        
         let c_pressed = keys.iter().any(|k| *k == 6);
         if c_pressed && !c_was_pressed {
             avoengine::Sounds.lock().unwrap().clear();
             println!("[game] Cleared sound queue");
         }
         c_was_pressed = c_pressed;
-
+        
         avoengine::render::Render_frame();
         window::Update_frame();
-
+        
         frame_count += 1;
         let elapsed = last_time.elapsed();
         if elapsed >= Duration::from_millis(1000) {
@@ -639,11 +753,11 @@ fn main() {
             frame_count = 0;
             last_time = Instant::now();
         }
-
+        
         if !running {
             break;
         }
     }
-
+    
     println!("Hello, world!");
 }
