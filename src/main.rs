@@ -184,7 +184,7 @@ fn main() {
             RGBA_color:[255,255,255,255], properties:HashMap::new(), special_name:String::new(),
         });
     }
-    avoengine::render::Bake_light();
+    // avoengine::render::Bake_light();
     avoengine::physics::Bake_physics_scene();
     avoengine::window::Mouse_capture();
 
@@ -288,6 +288,8 @@ fn main() {
     let mut mouse_captured = true;
     let mut prev_on_ground: bool = false;
     let mut current_anim_state: String = "default".to_string();
+
+    avoengine::render::Bake_dynamic_scene();
 
     loop {
         let keys = avoengine::window::Get_pressed_keys();
