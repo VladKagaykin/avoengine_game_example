@@ -92,6 +92,8 @@ fn offset_toward_triangle(hit: [f32; 3], tri_centroid: [f32; 3]) -> [f32; 3] {
 const PLAYER_NAME: &str = "__player";
 const MODEL_NAME: &str = "mark";
 const PLAYER_HEIGHT: f32 = 1.9;
+const PLAYER_WIDTH: f32 = 0.5;
+const PLAYER_LENGTH: f32 = 0.5;
 const CAMERA_FORWARD_OFFSET: f32 = 0.5;
 const WALK_FORCE: f32 = 7.5;
 const JUMP_FORCE: f32 = 300.0;
@@ -118,6 +120,19 @@ fn main() {
         -1.0, 1.0,-1.0,  1.0, 1.0, 1.0,  1.0, 1.0,-1.0,
         -1.0,-1.0,-1.0,  1.0,-1.0,-1.0,  1.0,-1.0, 1.0,
         -1.0,-1.0,-1.0,  1.0,-1.0, 1.0, -1.0,-1.0, 1.0,
+    ];
+
+    let hw = PLAYER_WIDTH * 0.5;
+    let hl = PLAYER_LENGTH * 0.5;
+    let player_vertices: Vec<f32> = vec![
+        -hw, 0.0,          -hl,
+         hw, 0.0,          -hl,
+         hw, 0.0,           hl,
+        -hw, 0.0,           hl,
+        -hw, PLAYER_HEIGHT, -hl,
+         hw, PLAYER_HEIGHT, -hl,
+         hw, PLAYER_HEIGHT,  hl,
+        -hw, PLAYER_HEIGHT,  hl,
     ];
 
     {
@@ -184,13 +199,13 @@ fn main() {
             RGBA_color:[255,255,255,255], properties:HashMap::new(), special_name:String::new(),
         });
     }
-    // avoengine::render::Bake_light();
     avoengine::physics::Bake_physics_scene();
     avoengine::window::Mouse_capture();
 
     {
         let mut p = avoengine::physics::Dynamic_physics_components::new(PLAYER_NAME.to_string());
         p.x=0.0; p.y=5.0; p.z=0.0;
+        p.vertices = player_vertices.clone();
         p.properties.insert("collision".into(),"1".into());
         p.properties.insert("has_gravity".into(),"1".into());
         p.properties.insert("resistance".into(),"0.5".into());
